@@ -1,0 +1,10 @@
+#!/bin/sh
+server=$1
+filename=$2
+x=1
+mkdir $filename
+while [ $x -le 30 ]
+do
+  iperf3 -c $server --logfile $filename/$filename-$x -t 200
+  x=$(( $x + 1 ))
+done

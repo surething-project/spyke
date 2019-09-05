@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.w3.org/1999/xhtml">
+<head>
+    <link rel="stylesheet" href="../../../css/devices.css">
+    <link rel="stylesheet" href="../../../css/page.css">
+    <script src="../../../js/jquery.js"></script>
+    <script src="../../../js/list.js"></script>
+    <!--<title> Device </title>-->
+    <title th:text="${device.name}"> Mode </title>
+</head>
+<body>
+<form class="back" th:action="@{/device/} + ${device.mac}">
+    <input type="submit" value="Go to previous page" />
+</form>
+
+<form class="block_input" action="javascript:onBlock();">
+    <input type="text" placeholder="IP address or Domain name" id="block"/>
+    <input type="submit" value="Block" />
+</form>
+
+<table class="blocklist">
+    <thead>
+    <tr>
+        <th> IP </th>
+        <th> DOMAIN </th>
+        <th> ACTION </th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr th:each="instance : ${blocklist}">
+        <td><span th:text="${instance.key}" id="blockedip"> IP </span></td>
+        <td><span th:text="${instance.value}" id="blockeddomain"> DOMAIN </span></td>
+        <td class="clickable unblock" onclick="onUnblock()"><span id="unblock"> Unblock </span></td>
+    </tr>
+    </tbody>
+</table>
+
+<table class="iplist">
+    <thead>
+    <tr>
+        <th> IP </th>
+        <th> DOMAIN </th>
+        <th> STATUS </th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr th:each="instance : ${iplist}">
+        <td><span th:text="${instance.key}"> IP </span></td>
+        <td><span th:text="${instance.value}"> DOMAIN </span></td>
+        <td><span th:class="${blocklist.get(instance.key)!=null} ? 'blocked' : 'not_blocked'"
+                  th:text="${blocklist.get(instance.key)!=null} ? 'BLOCKED' : 'Connection Detected'"
+        > BLOCK </span></td>
+    </tr>
+    </tbody>
+</table>
+</body>
+</html>

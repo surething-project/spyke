@@ -1,0 +1,22 @@
+#!/bin/sh
+
+x=0
+y=100
+# y 100-139=40 times.
+# x 0-249=250 times.
+# 40x250=10000 devices.
+while [ $y -le 139 ]
+do
+  while [ $x -le 249 ]
+  do
+    sudo iptables -N 192.168.$y.$x   # create chain
+    sudo iptables -A 192.168.$y.$x -s 192.168.$y.$x/32 -j ACCEPT
+    sudo iptables -A 192.168.$y.$x -s 192.168.$y.$x/32 -j DROP
+    sudo iptables -A 192.168.$y.$x -d 192.168.$y.$x/32 -j ACCEPT
+    sudo iptables -A 192.168.$y.$x -d 192.168.$y.$x/32 -j DROP
+    sudo iptables -A FORWARD -j 192.168.$y.$x    # add to FORWARD
+    x=$(( $x + 1 ))
+  done
+  x=0
+  y=$(( $y + 1 ))
+done

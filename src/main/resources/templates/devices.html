@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title> Devices </title>
+    <link rel="stylesheet" href="../../../css/devices.css">
+    <link rel="stylesheet" href="../../../css/page.css">
+    <script src="../../../js/device.js"></script>
+    <script src="../../../js/d3_v5.js"></script>
+</head>
+<body onload="load()">
+    <form class="back" action="/">
+        <input type="submit" value="Go to previous page" />
+    </form>
+    <!--
+    <form class="back" th:action="@{/blocklist/}" >
+        <input type="submit" value="IP List - Blocked" />
+    </form>
+    -->
+    <table class="devices">
+        <thead>
+            <tr>
+                <th> IP </th>
+                <th> MAC </th>
+                <th> NAME </th>
+                <th> STATUS </th>
+                <th> USAGE </th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr th:if="${devices.empty}">
+                <td colspan="5"> No devices available </td>
+            </tr>
+            <tr th:each="device : ${devices}">
+                <td><span th:text="${device.ip}"> IP </span></td>
+                <td><span th:text="${device.mac}"> MAC </span></td>
+                <td><span th:text="${device.name}"> NAME </span></td>
+                <td><span th:text="${device.status}" class="status"> STATUS </span></td>
+                <td><span ><a href="/device" th:href="'/device/'+${device.mac}" /> Check </span></td>
+            </tr>
+        </tbody>
+    </table>
+</body>
+<script>
+    function load(){
+        for(let i=0;i<document.getElementsByClassName("status").length;i++) {
+            switch (document.getElementsByClassName("status")[i].innerHTML) {
+                case "NEW":
+                    d3.select(document.getElementsByClassName("status")[i]).style("color", "orange");
+                    break;
+                case "ALLOWED":
+                    d3.select(document.getElementsByClassName("status")[i]).style("color", "green");
+                    break;
+                case "BLOCKED":
+                    d3.select(document.getElementsByClassName("status")[i]).style("color", "red");
+                    break;
+                default:
+                    d3.select(document.getElementsByClassName("status")[i]).style("color", "black");
+            }
+        }
+    }
+</script>
+</html>

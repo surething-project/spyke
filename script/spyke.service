@@ -1,0 +1,17 @@
+[Unit]
+Description=spyke - A Network Monitor
+After=syslog.target
+After=network.target
+
+[Service]
+WorkingDirectory=/home/pi/spyke/target/
+User=pi
+Type=simple
+StandardInput=/home/pi/spyke/target/input
+StandardOutput=syslog
+StandardError=syslog
+SyslogIdentifier=spyke
+ExecStart=+/home/pi/spyke/target/spyke-1.0.0.jar
+
+[Install]
+WantedBy=multi-user.target

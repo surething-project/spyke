@@ -1,0 +1,12 @@
+#!/bin/sh
+x=0
+while [ $x -le 99 ]
+do
+  sudo iptables -N 192.168.3.$x   # create chain
+  sudo iptables -A 192.168.3.$x -s 192.168.3.$x/32 -j ACCEPT
+  sudo iptables -A 192.168.3.$x -s 192.168.3.$x/32 -j DROP
+  sudo iptables -A 192.168.3.$x -d 192.168.3.$x/32 -j ACCEPT
+  sudo iptables -A 192.168.3.$x -d 192.168.3.$x/32 -j DROP
+  sudo iptables -A FORWARD -j 192.168.3.$x    # add to FORWARD
+  x=$(( $x + 1 ))
+done

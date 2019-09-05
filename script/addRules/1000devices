@@ -1,0 +1,31 @@
+#!/bin/sh
+
+x=0
+while [ $x -le 249 ]
+do
+  sudo iptables -N 192.168.3.$x   # create chain
+  sudo iptables -A 192.168.3.$x -s 192.168.3.$x/32 -j ACCEPT
+  sudo iptables -A 192.168.3.$x -s 192.168.3.$x/32 -j DROP
+  sudo iptables -A 192.168.3.$x -d 192.168.3.$x/32 -j ACCEPT
+  sudo iptables -A 192.168.3.$x -d 192.168.3.$x/32 -j DROP
+  sudo iptables -A FORWARD -j 192.168.3.$x    # add to FORWARD
+  sudo iptables -N 192.168.4.$x   # create chain
+  sudo iptables -A 192.168.4.$x -s 192.168.4.$x/32 -j ACCEPT
+  sudo iptables -A 192.168.4.$x -s 192.168.4.$x/32 -j DROP
+  sudo iptables -A 192.168.4.$x -d 192.168.4.$x/32 -j ACCEPT
+  sudo iptables -A 192.168.4.$x -d 192.168.4.$x/32 -j DROP
+  sudo iptables -A FORWARD -j 192.168.4.$x    # add to FORWARD
+  sudo iptables -N 192.168.5.$x   # create chain
+  sudo iptables -A 192.168.5.$x -s 192.168.5.$x/32 -j ACCEPT
+  sudo iptables -A 192.168.5.$x -s 192.168.5.$x/32 -j DROP
+  sudo iptables -A 192.168.5.$x -d 192.168.5.$x/32 -j ACCEPT
+  sudo iptables -A 192.168.5.$x -d 192.168.5.$x/32 -j DROP
+  sudo iptables -A FORWARD -j 192.168.5.$x    # add to FORWARD
+  sudo iptables -N 192.168.6.$x   # create chain
+  sudo iptables -A 192.168.6.$x -s 192.168.6.$x/32 -j ACCEPT
+  sudo iptables -A 192.168.6.$x -s 192.168.6.$x/32 -j DROP
+  sudo iptables -A 192.168.6.$x -d 192.168.6.$x/32 -j ACCEPT
+  sudo iptables -A 192.168.6.$x -d 192.168.6.$x/32 -j DROP
+  sudo iptables -A FORWARD -j 192.168.6.$x    # add to FORWARD
+  x=$(( $x + 1 ))
+done

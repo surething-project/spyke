@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.w3.org/1999/xhtml">
+<head>
+    <link rel="stylesheet" href="../../../css/devices.css">
+    <link rel="stylesheet" href="../../../css/diagram.css">
+    <link rel="stylesheet" href="../../../css/page.css">
+    <!--<title> Device </title>-->
+    <title th:text="${device.name}"> Mode </title>
+    <script src="../../../js/d3_v5.js"></script>
+    <script src="../../../js/jquery.js"></script>
+    <script src="../../../js/device.js"></script>
+</head>
+<body onload="load()">
+    <form class="back" action="/devices">
+        <input type="submit" value="Go to previous page" />
+    </form>
+    <form class="back" th:action="@{/iplist/} + ${device.mac}" >
+        <input type="submit" value="IP List" />
+    </form>
+    <table class="devices">
+        <thead>
+        <tr>
+            <th> IP </th>
+            <th> MAC </th>
+            <th> NAME </th>
+            <th> STATUS </th>
+            <th> UPLOAD QUOTA </th>
+            <th> UPLOAD BANDWIDTH </th>
+            <th> PERIOD </th>
+            <th> SAVE </th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+            <td><span th:text="${device.ip}" id="ip"> IP </span></td>
+            <td><span th:text="${device.mac}" id="mac"> MAC </span></td>
+            <td><span th:text="${device.name}" id="name"> NAME </span></td>
+            <td class="clickable median_cell" onclick="change()"><span th:text="${device.status}" id="status"> STATUS </span></td>
+            <td class="clickable big_cell">
+                <input type="number" min="0" max="10000" th:value="${device.quota}" id="quota"/>
+                <select id="quota_unit" class="uppercase">
+                    <option th:value="${device.quotaBUnit}" disabled selected value><span class="uppercase" th:text="${device.quotaBUnit}"> unit </span></option>
+                    <option value="kb">KB</option>
+                    <option value="mb">MB</option>
+                    <option value="gb">GB</option>
+                </select>
+            </td>
+            <td class="clickable big_cell">
+                <input type="number" min="0" max="10000" th:value="${device.bandwidth}" id="bandwidth"/>
+                <select id="bandwidth_unit" class="uppercase">
+                    <option th:value="${device.bandwidthBUnit}" disabled selected value><span class="uppercase" th:text="${device.bandwidthBUnit}"> unit </span></option>
+                    <option value="kb">KB</option>
+                    <option value="mb">MB</option>
+                </select>
+            </td>
+            <td class="clickable big_cell">
+                <input type="number" min="0" max="100" th:value="${device.period}" id="period"/>
+                <select id="period_unit" class="uppercase">
+                    <option th:switch="${device.periodUnit.toString()}" th:value="${device.periodUnit}" disabled selected value>
+                        <span th:case="'m'"> MIN </span>
+                        <span th:case="'h'"> HOUR </span>
+                        <span th:case="'d'"> DAY </span>
+                    </option>
+                    <option value="m">MIN</option>
+                    <option value="h">HOUR</option>
+                    <option value="d">DAY</option>
+                </select>
+            </td>
+            <td class="small_cell"><button onclick="save()">Save</button></td>
+        </tr>
+        </tbody>
+    </table>
+    <p>
+        <div id='pass_container'>
+            <svg id='pass_svg'/>
+        </div>
+        <p></p>
+        <div id='drop_container'>
+            <svg id='drop_svg'/>
+        </div>
+
+        <script src="../../../js/diagram.js"></script>
+    </p>
+</body>
+</html>

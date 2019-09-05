@@ -1,0 +1,22 @@
+CREATE TABLE IF NOT EXISTS device(
+  ip CHAR(20) NOT NULL UNIQUE,
+  mac CHAR(20) NOT NULL UNIQUE,
+  name TEXT NOT NULL DEFAULT 'Unknown device',
+  status TEXT NOT NULL DEFAULT 'NEW',
+  quota NUMERIC NOT NULL,
+  bandwidth NUMERIC NOT NULL,
+  period NUMERIC NOT NULL,
+  quota_unit CHAR(8) NOT NULL,
+  bandwidth_unit CHAR(8) NOT NULL,
+  period_unit CHAR(8) NOT NULL,
+  PRIMARY KEY (mac)
+);
+CREATE TABLE IF NOT EXISTS period(
+  start_time TIMESTAMP NOT NULL,
+  end_time TIMESTAMP NOT NULL,
+  mac CHAR(20) NOT NULL,
+  passed_bytes NUMBER NOT NULL,
+  dropped_bytes NUMBER NOT NULL,
+  FOREIGN KEY (mac) REFERENCES device (mac)
+	ON DELETE CASCADE ON UPDATE CASCADE
+);

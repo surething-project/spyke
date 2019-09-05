@@ -1,0 +1,31 @@
+<html>
+	<head>
+		<title> Home </title>
+		<link rel="stylesheet" href="../../../css/page.css">
+		<meta http-equiv="refresh" content="5;url=/devices" />
+	</head>
+	<body>
+		<form class="back" action="/devices">
+			<input type="submit" value="Go to Devices page now" />
+		</form>
+		<div class="welcome">
+			Welcome to Spyke!
+			<br/>
+			Redirecting to 'Devices page'...
+			<br/>
+		</div>
+		<div class="countdown">
+			<span  id="time">5</span> seconds remaining...
+		</div>
+	</body>
+	<script>
+		let time_left = 4;
+		const downloadTimer = setInterval(function(){
+			document.getElementById("time").innerHTML = time_left ;
+			time_left -= 1;
+			if(time_left <= 0){
+				clearInterval(downloadTimer);
+			}
+		}, 1000);
+	</script>
+</html>
