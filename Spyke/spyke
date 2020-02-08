@@ -1,0 +1,299 @@
+#!/bin/bash
+#
+#  SPYKE commands
+#  
+
+### Linux commands: 
+#   -mvn
+#   -find
+#   -tee
+#   -chmod
+#   -cp
+#   -rm
+#   -sed
+#   -grep
+#   -echo
+#   -cat
+#   -systemctl
+#   -journalctl
+#   -netstat
+#   -iptables
+#   -tc
+#   -vcgencmd
+
+MVN=/usr/bin/mvn
+FIND=/usr/bin/find
+TEE=/usr/bin/tee
+CHMOD=/bin/chmod
+CP=/bin/cp
+RM=/bin/rm
+SED=/bin/sed
+GREP=/bin/grep
+ECHO=/bin/echo
+CAT=/bin/cat
+SYSTEMCTL=/bin/systemctl
+JOURNALCTL=/bin/journalctl
+NETSTAT=/bin/netstat
+IPTABLES=/sbin/iptables
+TC=/sbin/tc
+VCGENCMD=/opt/vc/bin/vcgencmd
+
+### variables:
+#   -VERIFIED - verify if the sistem has the programs needed
+#   -SCRIPT - path to spyke script
+#   -TARGET - path to spyke target
+#   -IPTABLES_CONF - path to iptables.conf
+#   -SERVICE - spyke systemd service
+#   -DNSMASQ_CONF - path to file dnsmasq.conf
+#   -IPTABLES_LOG_CONF - path to iptables log config file; redirect log to specified file
+#   -DNS_LEASE - path to dnsmasq lease file
+#   -RC_LOCAL - path to rc.local file; bootstrap scrip
+SCRIPT=$PWD/script
+CONFIG=$SCRIPT/config
+TARGET=$PWD/target
+IPTABLES_CONF=/etc/iptables.ipv4.conf
+SERVICE=/etc/systemd/system/spyke.service
+DNSMASQ_CONF=/etc/dnsmasq.conf
+IPTABLES_LOG_CONF=/etc/rsyslog.d/iptables.conf
+DNS_LEASE=/var/lib/misc/dnsmasq.leases
+RC_LOCAL=/etc/rc.local
+
+install() {
+
+    if [ "`$SYSTEMCTL is-active spyke`" == "active" ]; then
+    $ECHO "spyke already is installed and running"
+    exit 0
+    fi
+    $MVN clean package
+
+    # cp iptables rules /etc/iptables.ipv4.conf
+    $CP $CONFIG/iptables.ipv4.conf $IPTABLES_CONF
+    # cp spyke service /etc/systemd/system/spyke.service
+    $CP $CONFIG/spyke.service $SERVICE
+
+    # add the handle new connected device script to /etc/dnsmasq.conf
+    $CHMOD +x script/device
+    if $GREP -q "dhcp-script=$SCRIPT/device" $DNSMASQ_CONF; then
+        $ECHO "file $DNSMASQ_CONF already has dhcp-script=$SCRIPT/device"
+    else
+        $ECHO "dhcp-script=$SCRIPT/device" | $TEE --append $DNSMASQ_CONF
+    fi
+
+    # active iptables on /etc/rc.local file
+    if $GREP -q "iptables-restore < $IPTABLES_CONF" $RC_LOCAL; then
+        $ECHO "file $RC_LOCAL already has iptables-restore < $IPTABLES_CONF"
+    else
+        $ECHO "file $RC_LOCAL does not have iptables-restore < $IPTABLES_CONF"
+        $SED -i "/fi/a \iptables-restore < $IPTABLES_CONF\\" $RC_LOCAL
+    fi
+
+    $SYSTEMCTL enable spyke
+    $SYSTEMCTL start spyke
+
+    $IPTABLES-restore < /etc/iptables.ipv4.conf
+
+    #give time to spyke start and create spyke.db
+    while [ ! -f target/spyke.db ]
+    do
+        sleep 1
+    done
+
+    $SYSTEMCTL stop hostapd
+    $SYSTEMCTL stop dnsmasq
+    $RM $DNS_LEASE
+    sleep 1
+    $SYSTEMCTL start dnsmasq
+    $SYSTEMCTL start hostapd
+
+    # cp iptables log config file
+    $CP $CONFIG/iptables.conf $IPTABLES_LOG_CONF
+    $SYSTEMCTL restart rsyslog
+
+    $ECHO "spyke installed and started"
+
+}
+
+uninstall() {
+
+    if [ "`$SYSTEMCTL is-active spyke`" == "active" ]; then
+        $SYSTEMCTL stop spyke
+    fi
+    $SYSTEMCTL disable spyke
+    $MVN clean
+    # rm spyke iptables
+    $RM $IPTABLES_CONF
+    # delete all iptables rules
+    $IPTABLES -P INPUT ACCEPT
+    $IPTABLES -P FORWARD ACCEPT
+    $IPTABLES -P OUTPUT ACCEPT
+    $IPTABLES -t nat -F
+    $IPTABLES -t mangle -F
+    $IPTABLES -F
+    $IPTABLES -X
+
+    # rm spyke service
+    $RM $SERVICE
+    # rm the handle new connected device script line added
+    $SED -i "/dhcp-script=\/home\/pi\/spyke\/script\/device/d" $DNSMASQ_CONF
+    # deactivate iptables on /etc/rc.local file
+    $SED -i "/iptables-restore < \/etc\/iptables.ipv4.conf/d" $RC_LOCAL
+
+    # rm iptables log config file
+    $RM $IPTABLES_LOG_CONF
+    $SYSTEMCTL restart rsyslog
+
+    $ECHO "spyke uninstalled"
+
+}
+
+launch() {
+
+    if [ "`$SYSTEMCTL is-active spyke`" != "active" ]; then
+        $SYSTEMCTL start spyke
+        $ECHO "spyke started"
+        $ECHO "configuring spyke..."
+        $IPTABLES-restore < /etc/iptables.ipv4.conf
+
+        #give time to spyke start and create spyke.db
+        while [ ! -f target/spyke.db ]
+        do
+            sleep 1
+        done
+
+        $SYSTEMCTL stop hostapd
+        $SYSTEMCTL stop dnsmasq
+        $RM $DNS_LEASE
+        sleep 1
+        $SYSTEMCTL start dnsmasq
+        $SYSTEMCTL start hostapd
+        $ECHO "spyke is configured and running."
+    else
+        $ECHO "spyke is already running."
+    fi
+
+}
+
+terminate() {
+
+    if [ "`$SYSTEMCTL is-active spyke`" == "active" ]; then
+        $SYSTEMCTL stop spyke
+        $ECHO "spyke stopped"
+        $RM $PWD/target/spyke.db
+        $IPTABLES -P INPUT ACCEPT
+        $IPTABLES -P FORWARD ACCEPT
+        $IPTABLES -P OUTPUT ACCEPT
+        $IPTABLES -t nat -F
+        $IPTABLES -t mangle -F
+        $IPTABLES -F
+        $IPTABLES -X
+        $ECHO "Database and Iptables rules are cleaned."
+    else
+        $ECHO "spyke is not running"
+    fi
+
+}
+
+restart() {
+
+    terminate
+    sleep 3
+    launch
+
+}
+
+reinstall() {
+
+    uninstall
+    sleep 3
+    install
+
+}
+
+status() {
+
+    $ECHO "last 100 lines from syslog:"
+    #   log spyke from this boot
+    $ECHO "`$JOURNALCTL -u spyke -b -n 100`"
+    $ECHO ""
+
+}
+
+check() {
+
+    $ECHO ""
+    $ECHO "Check system open ports:"
+    $NETSTAT -antp
+
+    $ECHO ""
+    $ECHO "Dnsmasq lease file:"
+    $CAT $DNS_LEASE
+
+    $ECHO ""
+    $ECHO "Database spyke.db location:"
+    $FIND $PWD -name "*.db"
+
+    $ECHO ""
+    $ECHO "System's temperature:"
+    $VCGENCMD measure_temp
+
+    $ECHO ""
+
+}
+
+firewall(){
+
+    $ECHO ""
+    $ECHO "Iptables rules:"
+    $IPTABLES -nvL
+    $ECHO ""
+
+}
+
+howtouse() {
+
+    $ECHO "Usage:
+    ./spyke [option]
+Example:
+    ./spyke -h
+Options:
+    -i, install     install spyke to system
+    -u, unisntall       remove spyke from system
+    -l, launch      start spyke
+    -t, terminate       Regex blacklist domains(s)
+    -r, restart     stop spyke and start it again after 3 second
+    -ui, reinstall     unsintall spyke and install it again after 3 second
+    -s, status      show logs
+    -c, check       show system: -current temperature; -open ports; -dns lease file; -spyke.db location;
+    -f, firewall    show firewall: iptables' rules
+    -h, help        show this message
+Note:
+    You must have PERMISSION to run spyke or simply add SUDO at the beginning
+    Any other option or input shows this message";
+
+}
+
+case "$1" in
+
+  -i|install)   install;;
+
+  -u|uninstall) uninstall;;
+
+  -l|launch)    launch;;
+
+  -t|terminate) terminate;;
+
+  -r|restart)   restart;;
+
+  -ui|reinstall)   reinstall;;
+
+  -s|status)    status;;
+
+  -c|check)     check;;
+
+  -f|firewall)  firewall;;
+
+  *)    howtouse;;
+
+esac
+
+exit 0

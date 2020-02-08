@@ -1,0 +1,11 @@
+#!/bin/sh
+op="${1:-op}"
+mac="${2:-mac}"
+ip="${3:-ip}"
+hostname="${4}"
+if [ "$op" = "add" ]
+then
+  sqlite3 /etc/spyke/spyke.db \
+    "insert into device (ip,mac,name,status,quota,quota_unit,bandwidth,bandwidth_unit,period,period_unit) \
+    values (\"${ip}\",\"${mac}\",\"${hostname}\",\"NEW\",0,\"kb\",0,\"kb\",0,\"m\");"
+fi
