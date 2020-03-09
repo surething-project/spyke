@@ -12,6 +12,8 @@ import org.springframework.scheduling.support.CronTrigger;
 import org.springframework.stereotype.Component;
 import spyke.monitor.manage.DeviceManager;
 import spyke.monitor.manage.IptablesLog;
+import spyke.pcap4j.task.PacketHandler;
+import spyke.pcap4j.task.PacketSender;
 
 @Component
 public class CommandLine implements CommandLineRunner {
@@ -29,7 +31,7 @@ public class CommandLine implements CommandLineRunner {
     @Override
     public void run(String... args) throws Exception {
 
-        // ADD RULES ON IPTABLES AT BOOTSTRAPc
+        // ADD RULES ON IPTABLES AT BOOTSTRAP
         DeviceManager deviceSender = applicationContext.getBean(DeviceManager.class);
         taskExecutor.execute(deviceSender);
 
@@ -40,5 +42,20 @@ public class CommandLine implements CommandLineRunner {
         taskScheduler.schedule(
                 iptablesLog, cronTrigger
         );
+
+        // Execute PCAP4j
+        PacketHandler packetHandler = applicationContext.getBean(PacketHandler.class);
+        taskExecutor.execute(packetHandler);
+
+        /* STORE DATA TO DATABASE, NOTE: more data we are receiving, less interval we should have
+        TODO this may not be working
+        //CronTrigger cronTrigger = new CronTrigger("* * * * * ?");   // every second right now
+        //CronTrigger cronTrigger = new CronTrigger("0 * * * * ?");   // every minute right now
+        CronTrigger cronTrigger5Min = new CronTrigger("0 5 * * * ?");   // perhaps every hour at 5 mins
+        PacketSender packetSender = applicationContext.getBean(PacketSender.class);
+        taskScheduler.schedule(
+                packetSender, cronTrigger5Min
+        );
+         */
     }
 }
