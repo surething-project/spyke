@@ -73,7 +73,7 @@ public class Iptables{
      */
     public void renRule(Device device){
         /*
-        example:
+        example: -A for append and -I for insert
             sudo iptables -N 192.168.8.95   # create chain
             sudo iptables -A FORWARD -j 192.168.8.95
             sudo iptables -A 192.168.8.95 -s 192.168.8.95/32 -m quota --quota 1024 -m limit --limit 1/s -j ACCEPT	# 1 packet has 1500bytes usually
@@ -134,7 +134,7 @@ public class Iptables{
             }
         } else if(!deviceRules.containsKey(device) && newDevice(device)){
             // -I FORWARD 1 = insert at the first
-            if(execute("sudo /sbin/iptables -A FORWARD -j " + device.getIp())){
+            if(execute("sudo /sbin/iptables -I FORWARD -j " + device.getIp())){
                 logger.info("Chain [" + device.getIp() + "] created!");
             }
             /* INPUT & OUTPUT ACCEPT is no longer necessary
@@ -187,7 +187,7 @@ public class Iptables{
                 success = repRules(device, rules);
             } else {
                 success = repRules(device, rules);
-                if(!execute("sudo /sbin/iptables -A " + device.getIp() + " " + deviceRules.get(device).get(5).toString())){
+                if(!execute("sudo /sbin/iptables -I " + device.getIp() + " " + deviceRules.get(device).get(5).toString())){
                     return;
                 }
             }

@@ -48,9 +48,10 @@ VCGENCMD=/opt/vc/bin/vcgencmd
 #   -IPTABLES_LOG_CONF - path to iptables log config file; redirect log to specified file
 #   -DNS_LEASE - path to dnsmasq lease file
 #   -RC_LOCAL - path to rc.local file; bootstrap scrip
-SCRIPT=$PWD/script
+SPYKE=$PWD/Spyke
+SCRIPT=$SPYKE/script
 CONFIG=$SCRIPT/config
-TARGET=$PWD/target
+TARGET=$SPYKE/target
 IPTABLES_CONF=/etc/iptables.ipv4.conf
 SERVICE=/etc/systemd/system/spyke.service
 DNSMASQ_CONF=/etc/dnsmasq.conf
@@ -61,25 +62,26 @@ RC_LOCAL=/etc/rc.local
 install() {
 
     if [ "`$SYSTEMCTL is-active spyke`" == "active" ]; then
-    $ECHO "spyke already is installed and running"
-    exit 0
+        $ECHO "spyke already is installed and running"
+        exit 0
     fi
+
+    if [ ! which hostapd &> /dev/null] || [ ! which ]; then
+        echo "make sure you have all dependencies needed"
+    fi
+
     $MVN clean package
 
-    # cp iptables rules /etc/iptables.ipv4.conf
     $CP $CONFIG/iptables.ipv4.conf $IPTABLES_CONF
-    # cp spyke service /etc/systemd/system/spyke.service
+
     $CP $CONFIG/spyke.service $SERVICE
 
-    # add the handle new connected device script to /etc/dnsmasq.conf
-    $CHMOD +x script/device
     if $GREP -q "dhcp-script=$SCRIPT/device" $DNSMASQ_CONF; then
         $ECHO "file $DNSMASQ_CONF already has dhcp-script=$SCRIPT/device"
     else
         $ECHO "dhcp-script=$SCRIPT/device" | $TEE --append $DNSMASQ_CONF
     fi
 
-    # active iptables on /etc/rc.local file
     if $GREP -q "iptables-restore < $IPTABLES_CONF" $RC_LOCAL; then
         $ECHO "file $RC_LOCAL already has iptables-restore < $IPTABLES_CONF"
     else
@@ -92,7 +94,7 @@ install() {
 
     $IPTABLES-restore < /etc/iptables.ipv4.conf
 
-    #give time to spyke start and create spyke.db
+    # wait spyke start and create spyke.db
     while [ ! -f target/spyke.db ]
     do
         sleep 1
@@ -105,7 +107,6 @@ install() {
     $SYSTEMCTL start dnsmasq
     $SYSTEMCTL start hostapd
 
-    # cp iptables log config file
     $CP $CONFIG/iptables.conf $IPTABLES_LOG_CONF
     $SYSTEMCTL restart rsyslog
 
@@ -118,6 +119,7 @@ uninstall() {
     if [ "`$SYSTEMCTL is-active spyke`" == "active" ]; then
         $SYSTEMCTL stop spyke
     fi
+
     $SYSTEMCTL disable spyke
     $MVN clean
     # rm spyke iptables

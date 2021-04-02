@@ -69,3 +69,4 @@ ip addr flush dev ${wlan}
 ip addr add 192.168.8.1/24 dev ${wlan}
 
 mvn spring-boot:run
+# tail -f /dev/null

@@ -77,10 +77,10 @@ public class PacketReceiver implements Runnable {
                     logger.warn("Packet with src: ["+srcAddr+"] and dst: ["+dstAddr+"] are unknown devices");
                 }
             } else {
-                logger.warn("Packet is from/to spyke("+InetAddress.getLocalHost().getHostAddress()+")");
+                logger.debug("Packet is from/to spyke("+InetAddress.getLocalHost().getHostAddress()+")");
             }
         } catch (Exception e) {
-            logger.error("Read packet error: "+e.getMessage());
+            logger.debug("Read packet error: "+e.getMessage());
         }
     }
 }

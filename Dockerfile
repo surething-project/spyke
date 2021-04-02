@@ -17,10 +17,14 @@ RUN apt-get install -y sqlite3
 RUN apt-get install -y rfkill
 RUN apt-get install -y vim
 
+# for iptables update
+RUN apt-get -y install sudo
+
 WORKDIR /etc/spyke
 
 COPY . .
 
 RUN mvn package -DskipTests=true
 
+#ENTRYPOINT ["tail", "-f", "/dev/null"]
 ENTRYPOINT ["/bin/sh", "-c", "/etc/spyke/docker/spyke/startup.sh"]

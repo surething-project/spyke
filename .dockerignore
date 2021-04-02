@@ -1,6 +1,6 @@
 *
 
-!Spyke/docker/spyke/*
+!docker/spyke/*
 !Spyke/src/*
 !**/pom.xml
 !Spyke/target/*
