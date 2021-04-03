@@ -30,6 +30,15 @@ public class Iptables{
         return list;
     }
 
+    public boolean restoreRules() {
+        // FIXME update to FS
+        if (execute("sudo /sbin/iptables-restore < " + "iptables.ipv4.conf")){
+            logger.info("Iptables is restored with spyke default rules.");
+            return true;
+        }
+        return false;
+    }
+
     public boolean block(String block){ // block can be ip or domain
         if( block!=null && !block.equals("")) {
             try {

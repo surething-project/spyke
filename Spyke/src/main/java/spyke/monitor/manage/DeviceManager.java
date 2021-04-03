@@ -25,6 +25,10 @@ public class DeviceManager implements Runnable {
     private Iptables iptables;
     @Override
     public void run() {
+        // restore iptables rules
+        if (iptables.restoreRules()) {
+            // FIXME log
+        }
         // add iptables
         List<Device> devices = deviceRepository.findAll();
         for (Device device : devices) {

@@ -59,6 +59,83 @@ IPTABLES_LOG_CONF=/etc/rsyslog.d/iptables.conf
 DNS_LEASE=/var/lib/misc/dnsmasq.leases
 RC_LOCAL=/etc/rc.local
 
+check_dependencies() {
+    #hostapd  
+    #dnsmasq  
+    #oracle-java8-jdk  
+    #maven  
+    #libpcap-dev (pcap4j)  
+    #sqlite3  
+    #crontab  (already installed)
+    #iptables  (already installed)
+    hasMissingDependencies=false
+    if ! which hostapd &> /dev/null; then
+        echo "hostapd is not installed"
+                if [ ! $hasMissingDependencies ]; then
+            let hasMissingDependencies=true
+        fi
+    fi
+    if ! which dnsmasq &> /dev/null; then
+        echo "dnsmasq is not installed"
+        if [ ! $hasMissingDependencies ]; then
+            let hasMissingDependencies=true
+        fi
+    fi
+    if ! which java &> /dev/null; then
+        echo "java is not installed"
+        if [ ! $hasMissingDependencies ]; then
+            let hasMissingDependencies=true
+        fi
+    fi
+    if ! which mvn &> /dev/null; then
+        echo "maven is not installed"
+        if [ ! $hasMissingDependencies ]; then
+            let hasMissingDependencies=true
+        fi
+    fi
+    if ! which libpcap-dev &> /dev/null; then
+        echo "libpcap-dev is not installed"
+        if [ ! $hasMissingDependencies ]; then
+            let hasMissingDependencies=true
+        fi
+    fi
+    if ! which sqlite3 &> /dev/null; then
+        echo "sqlite3 is not installed"
+        if [ ! $hasMissingDependencies ]; then
+            let hasMissingDependencies=true
+        fi
+    fi
+    if ! which crontab &> /dev/null; then
+        echo "crontab is not installed"
+        if [ ! $hasMissingDependencies ]; then
+            let hasMissingDependencies=true
+        fi
+    fi
+    if ! which iptables &> /dev/null; then
+        echo "iptables is not installed"
+        if [ ! $hasMissingDependencies ]; then
+            let hasMissingDependencies=true
+        fi
+    fi
+    if [ $hasMissingDependencies ]; then
+        echo "Installing the required dependencies? [y/N]"
+        read option
+        if [ "$option" = "y" ] || [ "&option" = "Y" ]; then
+            if ! which apt &> /dev/null; then
+                echo "Unknow command apt, is this debian based linux?"
+                exit 1
+            else
+                apt-get update -y
+                apt-get install hostapd dnsmasq \
+                        oracle-java8-jdk maven libpcap \
+                        sqlite3 crontab iptables -y
+            fi
+        fi
+    else
+        echo "all dependencies are installed"
+    fi
+}
+
 install() {
 
     if [ "`$SYSTEMCTL is-active spyke`" == "active" ]; then
@@ -66,12 +143,11 @@ install() {
         exit 0
     fi
 
-    if [ ! which hostapd &> /dev/null] || [ ! which ]; then
-        echo "make sure you have all dependencies needed"
-    fi
+    check_dependencies
 
     $MVN clean package
 
+    # FIXME we do not need to copy the file anymore
     $CP $CONFIG/iptables.ipv4.conf $IPTABLES_CONF
 
     $CP $CONFIG/spyke.service $SERVICE
@@ -82,9 +158,11 @@ install() {
         $ECHO "dhcp-script=$SCRIPT/device" | $TEE --append $DNSMASQ_CONF
     fi
 
+    ## update iptables-restore 
     if $GREP -q "iptables-restore < $IPTABLES_CONF" $RC_LOCAL; then
         $ECHO "file $RC_LOCAL already has iptables-restore < $IPTABLES_CONF"
     else
+        ## FIXME new version won't use iptables on rc.local
         $ECHO "file $RC_LOCAL does not have iptables-restore < $IPTABLES_CONF"
         $SED -i "/fi/a \iptables-restore < $IPTABLES_CONF\\" $RC_LOCAL
     fi
@@ -254,10 +332,11 @@ firewall(){
 howtouse() {
 
     $ECHO "Usage:
-    ./spyke [option]
+    spyke [Options]
 Example:
-    ./spyke -h
+    spyke -h
 Options:
+    -cd, check_dependencies check missing dependencies
     -i, install     install spyke to system
     -u, unisntall       remove spyke from system
     -l, launch      start spyke
@@ -274,7 +353,15 @@ Note:
 
 }
 
+if [[ $UID != 0 ]]; then
+    echo "Root privilege required.
+Please run this script with sudo."
+    exit 1
+fi
+
 case "$1" in
+
+  -cd|check_dependencies) check_dependencies;; 
 
   -i|install)   install;;
 

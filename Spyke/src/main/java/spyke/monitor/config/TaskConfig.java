@@ -13,6 +13,8 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 @EnableAsync
 @EnableScheduling
 public class TaskConfig {
+
+    // FIXME create separate task executor for pcap4j
     @Bean(name = "taskExecutor")
     public TaskExecutor threadPoolTaskExecutor() {
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
