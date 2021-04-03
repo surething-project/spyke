@@ -15,11 +15,11 @@ import spyke.database.model.Period;
 import spyke.database.model.PeriodId;
 import spyke.database.repository.DeviceRepository;
 import spyke.database.repository.PeriodRepository;
-import spyke.database.variable.BUnit;
-import spyke.database.variable.Status;
-import spyke.database.variable.TUnit;
-import spyke.iptables.component.Iptables;
-import spyke.iptables.util.OperatingSystem;
+import spyke.database.model.types.BUnit;
+import spyke.database.model.types.Status;
+import spyke.database.model.types.TUnit;
+import spyke.monitor.iptables.component.Iptables;
+import spyke.monitor.iptables.util.OperatingSystem;
 import spyke.monitor.config.ScheduleConfig;
 import spyke.monitor.manage.IptablesLog;
 

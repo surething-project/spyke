@@ -14,9 +14,9 @@ import spyke.database.model.Period;
 import spyke.database.model.PeriodId;
 import spyke.database.repository.DeviceRepository;
 import spyke.database.repository.PeriodRepository;
-import spyke.database.variable.BUnit;
-import spyke.database.variable.Status;
-import spyke.database.variable.TUnit;
+import spyke.database.model.types.BUnit;
+import spyke.database.model.types.Status;
+import spyke.database.model.types.TUnit;
 
 import java.util.Calendar;
 import java.util.Date;

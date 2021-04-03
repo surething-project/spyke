@@ -1,4 +1,4 @@
-package spyke.database.variable;
+package spyke.database.model.types;
 
 /*
     m = minute

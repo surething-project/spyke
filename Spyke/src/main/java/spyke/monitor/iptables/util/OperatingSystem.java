@@ -1,4 +1,4 @@
-package spyke.iptables.util;
+package spyke.monitor.iptables.util;
 
 public class OperatingSystem {
     public static boolean isLinux(){

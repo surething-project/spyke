@@ -1,4 +1,4 @@
-package spyke.pcap4j.task;
+package spyke.monitor.pcap4j.task;
 
 import org.pcap4j.packet.EthernetPacket;
 import org.pcap4j.packet.IpV4Packet;
@@ -12,7 +12,7 @@ import org.springframework.stereotype.Component;
 import spyke.database.model.Download;
 import spyke.database.model.Upload;
 import spyke.database.repository.DeviceRepository;
-import spyke.pcap4j.manage.PacketManager;
+import spyke.monitor.pcap4j.manage.PacketManager;
 
 import java.net.InetAddress;
 import java.util.Calendar;

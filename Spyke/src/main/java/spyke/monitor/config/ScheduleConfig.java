@@ -2,21 +2,13 @@ package spyke.monitor.config;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
-import org.springframework.context.annotation.Scope;
 import org.springframework.scheduling.TaskScheduler;
 import org.springframework.scheduling.support.CronTrigger;
-import org.springframework.scheduling.support.SimpleTriggerContext;
-import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
 import spyke.database.model.Device;
-import spyke.database.model.Period;
-import spyke.database.model.PeriodId;
-import spyke.database.variable.TUnit;
+import spyke.database.model.types.TUnit;
 import spyke.monitor.manage.PeriodManager;
 
-import java.util.Calendar;
-import java.util.Date;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;

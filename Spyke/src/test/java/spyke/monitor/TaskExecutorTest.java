@@ -13,9 +13,9 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import spyke.CommandLine;
 import spyke.database.model.Device;
 import spyke.database.repository.PeriodRepository;
-import spyke.database.variable.Status;
-import spyke.database.variable.TUnit;
-import spyke.database.variable.BUnit;
+import spyke.database.model.types.Status;
+import spyke.database.model.types.TUnit;
+import spyke.database.model.types.BUnit;
 import spyke.monitor.config.ScheduleConfig;
 import spyke.monitor.manage.DeviceManager;
 

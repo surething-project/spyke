@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import spyke.database.model.Device;
 import spyke.database.repository.DeviceRepository;
-import spyke.iptables.component.Iptables;
+import spyke.monitor.iptables.component.Iptables;
 import spyke.monitor.manage.IptablesLog;
 
 import java.net.InetAddress;

@@ -12,41 +12,55 @@ import org.springframework.scheduling.support.CronTrigger;
 import org.springframework.stereotype.Component;
 import spyke.monitor.manage.DeviceManager;
 import spyke.monitor.manage.IptablesLog;
-import spyke.pcap4j.task.PacketHandler;
-import spyke.pcap4j.task.PacketSender;
+import spyke.monitor.pcap4j.task.PacketHandler;
 
 @Component
 public class CommandLine implements CommandLineRunner {
+
+    /**
+     * The automatic dependency injection for environment where profile and properties are used.
+     */
     @Autowired
     private Environment env;
+    /**
+     * The automatic dependency injection for execution tasks.
+     */
     @Autowired
     private TaskExecutor taskExecutor;
+    /**
+     * The automatic dependency injection for scheduler tasks.
+     */
     @Autowired
     private TaskScheduler taskScheduler;
+    /**
+     * The automatic dependency injection for application context.
+     */
     @Autowired
     private ApplicationContext applicationContext;
 
+    /**
+     * The logger.
+     */
     private Logger logger = LoggerFactory.getLogger(CommandLine.class);
 
     @Override
-    public void run(String... args) throws Exception {
+    public void run(final String... args) throws Exception {
 
-        // ADD RULES ON IPTABLES AT BOOTSTRAP
-        DeviceManager deviceSender = applicationContext.getBean(DeviceManager.class);
-        taskExecutor.execute(deviceSender);
+        manageExecutionTasks();
+        manageSchedulerTasks();
+    }
 
-        IptablesLog iptablesLog = applicationContext.getBean(IptablesLog.class);
+    /**
+     * Manage iptables rules at bootstrap. It includes adding default rules and devices rules.
+     *
+     */
+    private void manageExecutionTasks() {
 
-        //CronTrigger cronTrigger = new CronTrigger("0 0 * * * ?");   // every hour
-        CronTrigger cronTrigger = new CronTrigger("0 * * * * ?");   // every minute
-        taskScheduler.schedule(
-                iptablesLog, cronTrigger
-        );
+        final DeviceManager deviceSender = this.applicationContext.getBean(DeviceManager.class);
+        this.taskExecutor.execute(deviceSender);
 
-        // Execute PCAP4j
-        PacketHandler packetHandler = applicationContext.getBean(PacketHandler.class);
-        taskExecutor.execute(packetHandler);
-
+        final PacketHandler packetHandler = this.applicationContext.getBean(PacketHandler.class);
+        this.taskExecutor.execute(packetHandler);
         /* STORE DATA TO DATABASE, NOTE: more data we are receiving, less interval we should have
         TODO this may not be working
         //CronTrigger cronTrigger = new CronTrigger("* * * * * ?");   // every second right now
@@ -57,5 +71,15 @@ public class CommandLine implements CommandLineRunner {
                 packetSender, cronTrigger5Min
         );
          */
+    }
+
+    private void manageSchedulerTasks() {
+        final IptablesLog iptablesLog = this.applicationContext.getBean(IptablesLog.class);
+
+        //CronTrigger cronTrigger = new CronTrigger("0 0 * * * ?");   // every hour
+        final CronTrigger cronTrigger = new CronTrigger("0 * * * * ?");   // every minute
+        this.taskScheduler.schedule(
+                iptablesLog, cronTrigger
+        );
     }
 }

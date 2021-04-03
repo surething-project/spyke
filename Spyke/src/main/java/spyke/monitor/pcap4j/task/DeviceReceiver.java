@@ -1,4 +1,4 @@
-package spyke.pcap4j.task;
+package spyke.monitor.pcap4j.task;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -7,9 +7,9 @@ import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 import spyke.database.model.Device;
 import spyke.database.repository.DeviceRepository;
-import spyke.database.variable.BUnit;
-import spyke.database.variable.Status;
-import spyke.database.variable.TUnit;
+import spyke.database.model.types.BUnit;
+import spyke.database.model.types.Status;
+import spyke.database.model.types.TUnit;
 
 import java.util.Scanner;
 

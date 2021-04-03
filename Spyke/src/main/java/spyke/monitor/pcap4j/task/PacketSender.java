@@ -1,4 +1,4 @@
-package spyke.pcap4j.task;
+package spyke.monitor.pcap4j.task;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -10,7 +10,7 @@ import org.springframework.stereotype.Component;
 import spyke.database.model.Device;
 import spyke.database.model.Upload;
 import spyke.database.repository.DeviceRepository;
-import spyke.pcap4j.manage.PacketManager;
+import spyke.monitor.pcap4j.manage.PacketManager;
 
 import java.util.Calendar;
 import java.util.Date;

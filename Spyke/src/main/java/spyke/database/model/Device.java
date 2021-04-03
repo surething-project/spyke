@@ -1,15 +1,18 @@
 package spyke.database.model;
 
-import spyke.database.variable.BUnit;
-import spyke.database.variable.Status;
-import spyke.database.variable.TUnit;
+import spyke.database.model.types.BUnit;
+import spyke.database.model.types.Status;
+import spyke.database.model.types.TUnit;
 
-import javax.persistence.*;
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.EnumType;
+import javax.persistence.Enumerated;
+import javax.persistence.Id;
+import javax.persistence.Table;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.List;
 
 @Entity
 @Table(name = "device")

@@ -1,7 +1,7 @@
-package spyke.iptables.model;
+package spyke.monitor.iptables.model;
 
-import spyke.iptables.variable.Filter;
-import spyke.iptables.variable.Table;
+import spyke.monitor.iptables.model.types.Filter;
+import spyke.monitor.iptables.model.types.Table;
 
 import java.util.List;
 

@@ -1,11 +1,11 @@
-package spyke.iptables.component;
+package spyke.monitor.iptables.component;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import spyke.database.model.Device;
-import spyke.iptables.model.Rule;
-import spyke.iptables.variable.Filter;
+import spyke.monitor.iptables.model.Rule;
+import spyke.monitor.iptables.model.types.Filter;
 
 import java.net.InetAddress;
 import java.io.BufferedReader;
