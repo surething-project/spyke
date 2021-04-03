@@ -80,5 +80,5 @@ docker image prune -a
 ## 💡 Other information
 
 1. **Client and Server dockerfile**
-The docker environment contains containers for [server](https://github.com/surething-project/spyke/blob/master/Spyke/docker/server) and for [client](https://github.com/surething-project/spyke/blob/master/Spyke/docker/server) which are not being used.
+The docker environment contains containers for [server](https://github.com/surething-project/spyke/blob/master/core/docker/server) and for [client](https://github.com/surething-project/spyke/blob/master/core/docker/server) which are not being used.
 This would be the future work for integration test purpose.

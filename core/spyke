@@ -42,82 +42,95 @@ VCGENCMD=/opt/vc/bin/vcgencmd
 #   -VERIFIED - verify if the sistem has the programs needed
 #   -SCRIPT - path to spyke script
 #   -TARGET - path to spyke target
+#   -SPYKE_JAR - path to spyke jar file
 #   -IPTABLES_CONF - path to iptables.conf
 #   -SERVICE - spyke systemd service
 #   -DNSMASQ_CONF - path to file dnsmasq.conf
+#   -HOSTAPD_CONF - path to file hostapd.conf
+#   -HOSTAPD_DEFAULT - path to default hostapd file
+#   -DHCP_CONF - path to file dhcpcd.conf
+#   -SYSCTL_CONF - path to file sysctl.conf for packet forward
 #   -IPTABLES_LOG_CONF - path to iptables log config file; redirect log to specified file
 #   -DNS_LEASE - path to dnsmasq lease file
 #   -RC_LOCAL - path to rc.local file; bootstrap scrip
-SPYKE=$PWD/Spyke
+SPYKE=$PWD/core
 SCRIPT=$SPYKE/script
 CONFIG=$SCRIPT/config
 TARGET=$SPYKE/target
+SPYKE_JAR=$TARGET/core-2.0.0.jar
 IPTABLES_CONF=/etc/iptables.ipv4.conf
 SERVICE=/etc/systemd/system/spyke.service
 DNSMASQ_CONF=/etc/dnsmasq.conf
+HOSTAPD_CONF=/etc/hostapd/hostapd.conf
+HOSTAPD_DEFAULT=/etc/default/hostapd
+DHCP_CONF=/etc/dhcpcd.conf
+SYSCTL_CONF=/etc/sysctl.conf
 IPTABLES_LOG_CONF=/etc/rsyslog.d/iptables.conf
 DNS_LEASE=/var/lib/misc/dnsmasq.leases
 RC_LOCAL=/etc/rc.local
 
 check_dependencies() {
-    #hostapd  
-    #dnsmasq  
-    #oracle-java8-jdk  
-    #maven  
-    #libpcap-dev (pcap4j)  
-    #sqlite3  
-    #crontab  (already installed)
-    #iptables  (already installed)
+
+    #hostapd
+    #dnsmasq
+    #openjdk-8-jdk
+    #maven
+    #libpcap-dev (pcap4j)
+    #sqlite3
+    #cron (already installed)
+    #iptables (already installed)
+
     hasMissingDependencies=false
+    if ! ldconfig -p | grep libpcap &> /dev/null; then
+        echo "libpcap-dev is not installed."
+        if [ "$hasMissingDependencies" = false ]; then
+            hasMissingDependencies=true
+        fi
+    fi
     if ! which hostapd &> /dev/null; then
-        echo "hostapd is not installed"
-                if [ ! $hasMissingDependencies ]; then
-            let hasMissingDependencies=true
+        echo "hostapd is not installed."
+        if [ "$hasMissingDependencies" = false ]; then
+            hasMissingDependencies=true
         fi
     fi
     if ! which dnsmasq &> /dev/null; then
-        echo "dnsmasq is not installed"
-        if [ ! $hasMissingDependencies ]; then
-            let hasMissingDependencies=true
+        echo "dnsmasq is not installed."
+        if [ "$hasMissingDependencies" = false ]; then
+            hasMissingDependencies=true
         fi
     fi
     if ! which java &> /dev/null; then
-        echo "java is not installed"
-        if [ ! $hasMissingDependencies ]; then
-            let hasMissingDependencies=true
+        echo "java is not installed."
+        if [ "$hasMissingDependencies" = false ]; then
+            hasMissingDependencies=true
         fi
     fi
     if ! which mvn &> /dev/null; then
-        echo "maven is not installed"
-        if [ ! $hasMissingDependencies ]; then
-            let hasMissingDependencies=true
-        fi
-    fi
-    if ! which libpcap-dev &> /dev/null; then
-        echo "libpcap-dev is not installed"
-        if [ ! $hasMissingDependencies ]; then
-            let hasMissingDependencies=true
+        echo "maven is not installed."
+        if [ "$hasMissingDependencies" = false ]; then
+            hasMissingDependencies=true
         fi
     fi
     if ! which sqlite3 &> /dev/null; then
-        echo "sqlite3 is not installed"
-        if [ ! $hasMissingDependencies ]; then
-            let hasMissingDependencies=true
+        echo "sqlite3 is not installed."
+        if [ "$hasMissingDependencies" = false ]; then
+            hasMissingDependencies=true
         fi
     fi
-    if ! which crontab &> /dev/null; then
-        echo "crontab is not installed"
-        if [ ! $hasMissingDependencies ]; then
-            let hasMissingDependencies=true
+    if ! which cron &> /dev/null; then
+        echo "cron is not installed."
+        if [ "$hasMissingDependencies" = false ]; then
+            hasMissingDependencies=true
         fi
     fi
     if ! which iptables &> /dev/null; then
-        echo "iptables is not installed"
-        if [ ! $hasMissingDependencies ]; then
-            let hasMissingDependencies=true
+        echo "iptables is not installed."
+        if [ "$hasMissingDependencies" = false ]; then
+            hasMissingDependencies=true
         fi
     fi
-    if [ $hasMissingDependencies ]; then
+
+    if [ "$hasMissingDependencies" = true ] ; then
         echo "Installing the required dependencies? [y/N]"
         read option
         if [ "$option" = "y" ] || [ "&option" = "Y" ]; then
@@ -127,13 +140,72 @@ check_dependencies() {
             else
                 apt-get update -y
                 apt-get install hostapd dnsmasq \
-                        oracle-java8-jdk maven libpcap \
-                        sqlite3 crontab iptables -y
+                        openjdk-8-jdk maven libpcap-dev \
+                        sqlite3 cron iptables -y
             fi
+        else
+            echo "Fail installing the required dependencies."
+            exit 1
         fi
     else
-        echo "all dependencies are installed"
+        echo "all dependencies are installed."
     fi
+}
+
+spyke_configuration() {
+
+    #$CP $CONFIG/iptables.ipv4.conf $IPTABLES_CONF
+    #$CP $CONFIG/spyke.service $SERVICE
+    $ECHO "[Unit]
+Description=spyke - A Network Monitor
+After=syslog.target
+After=network.target
+
+[Service]
+WorkingDirectory=$TARGET
+User=pi
+Type=simple
+StandardInput=$TARGET/input
+StandardOutput=syslog
+StandardError=syslog
+SyslogIdentifier=spyke
+ExecStart=+$SPYKE_JAR
+
+[Install]
+WantedBy=multi-user.target
+" > $SERVICE
+
+    $CP $CONFIG/hostapd.conf $HOSTAPD_CONF
+    if $GREP -q "dhcp-script=$SCRIPT/device" $DNSMASQ_CONF; then
+        $ECHO "file $DNSMASQ_CONF already has dhcp-script=$SCRIPT/device"
+    else
+        $CP $CONFIG/dnsmasq.conf $DNSMASQ_CONF
+        $ECHO "dhcp-script=$SCRIPT/device" | $TEE --append $DNSMASQ_CONF
+    fi
+    
+    if $GREP -q "# add for spyke" $DHCP_CONF ; then
+        $ECHO "file $DHCP_CONF already part added for spyke"
+    else
+        $ECHO "# add for spyke
+interface wlan0 
+static ip_address=192.168.8.1/24
+denyinterfaces eth0
+denyinterfaces wlan0" >> $DHCP_CONF
+    fi
+
+    $ECHO "# add for spyke
+DAEMON_CONF=\"/etc/hostapd/hostapd.conf\"" > $HOSTAPD_DEFAULT
+    $ECHO "# add for spyke
+net.ipv4.ip_forward=1" > $SYSCTL_CONF
+
+    ## update iptables-restore 
+    #if $GREP -q "iptables-restore < $IPTABLES_CONF" $RC_LOCAL; then
+    #    $ECHO "file $RC_LOCAL already has iptables-restore < $IPTABLES_CONF"
+    #else
+    #    ## FIXME new version won't use iptables on rc.local
+    #    $ECHO "file $RC_LOCAL does not have iptables-restore < $IPTABLES_CONF"
+    #    $SED -i "/fi/a \iptables-restore < $IPTABLES_CONF\\" $RC_LOCAL
+    #fi
 }
 
 install() {
@@ -144,33 +216,11 @@ install() {
     fi
 
     check_dependencies
+    spyke_configuration
 
     $MVN clean package
-
-    # FIXME we do not need to copy the file anymore
-    $CP $CONFIG/iptables.ipv4.conf $IPTABLES_CONF
-
-    $CP $CONFIG/spyke.service $SERVICE
-
-    if $GREP -q "dhcp-script=$SCRIPT/device" $DNSMASQ_CONF; then
-        $ECHO "file $DNSMASQ_CONF already has dhcp-script=$SCRIPT/device"
-    else
-        $ECHO "dhcp-script=$SCRIPT/device" | $TEE --append $DNSMASQ_CONF
-    fi
-
-    ## update iptables-restore 
-    if $GREP -q "iptables-restore < $IPTABLES_CONF" $RC_LOCAL; then
-        $ECHO "file $RC_LOCAL already has iptables-restore < $IPTABLES_CONF"
-    else
-        ## FIXME new version won't use iptables on rc.local
-        $ECHO "file $RC_LOCAL does not have iptables-restore < $IPTABLES_CONF"
-        $SED -i "/fi/a \iptables-restore < $IPTABLES_CONF\\" $RC_LOCAL
-    fi
-
     $SYSTEMCTL enable spyke
     $SYSTEMCTL start spyke
-
-    $IPTABLES-restore < /etc/iptables.ipv4.conf
 
     # wait spyke start and create spyke.db
     while [ ! -f target/spyke.db ]
@@ -185,6 +235,7 @@ install() {
     $SYSTEMCTL start dnsmasq
     $SYSTEMCTL start hostapd
 
+    # FIXME this should be replaced with pcap4j 
     $CP $CONFIG/iptables.conf $IPTABLES_LOG_CONF
     $SYSTEMCTL restart rsyslog
 
@@ -360,6 +411,8 @@ Please run this script with sudo."
 fi
 
 case "$1" in
+
+  -conf) spyke_configuration;;
 
   -cd|check_dependencies) check_dependencies;; 
 

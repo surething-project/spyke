@@ -121,9 +121,8 @@
         </plugins>
     </build>
 
-
     <modules>
-        <module>Spyke</module>
+        <module>core</module>
     </modules>
 
 </project>

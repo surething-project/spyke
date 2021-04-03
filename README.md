@@ -9,11 +9,11 @@ Raspbian GNU/Linux 9.6 (stretch)
 ## dependencies
 * hostapd
 * dnsmasq
-* oracle-java8-jdk
+* openjdk-8-jdk
 * maven
 * libpcap-dev (pcap4j)
 * sqlite3
-* crontab (already installed)
+* cron (already installed)
 * iptables (already installed)
 
 ## quick setup
@@ -39,7 +39,7 @@ Dnsmasq is a daemon that provides DNS server and DHCP server. <br />
 After installing it we need to configure the DHCP daemon configuration file in order to define the ip address. <br />
 Moreover, we need to configure the dnsmasq configuration file to define characteristics of DHCP server.
 
-#### /etc/dhcpd.conf
+#### /etc/dhcpcd.conf
 ```
 # Add following lines at end of the file)
 interface wlan0 
@@ -53,7 +53,7 @@ denyinterfaces wlan0
 interface=wlan0
 listen-address=192.168.8.1
 dhcp-range=192.168.8.2,192.168.8.255,255.255.255.0,infinite
-dhcp-option=3,192.168.8.1# router
+dhcp-option=3,192.168.8.1 #router
 dhcp-option=6,192.168.1.254,8.8.8.8 #dns server
 dhcp-script=/<path>/spyke/script/device
 ```
@@ -81,9 +81,7 @@ rsn_pairwise=CCMP
 DAEMON_CONF="/etc/hostapd/hostapd.conf"
 ```
 ### Packet forward
-```
 To be able to forward packets, it is needed to set ip forward to 1 in the sysctl configuration file.
-```
 #### /etc/sysctl.conf
 ```
 (Replace #net.ipv4.ip_forward=1)

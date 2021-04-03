@@ -1,8 +1,8 @@
 *
 
 !docker/spyke/*
-!Spyke/src/*
+!core/src/*
 !**/pom.xml
-!Spyke/target/*
-!Spyke/setup.sh
-!Spyke/spyke
+!core/target/*
+!core/setup.sh
+!core/spyke
