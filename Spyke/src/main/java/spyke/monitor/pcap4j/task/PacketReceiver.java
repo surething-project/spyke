@@ -58,8 +58,8 @@ public class PacketReceiver implements Runnable {
                 IpNumber protocol = ipV4Packet.getHeader().getProtocol();
                 int data = ipV4Packet.getHeader().getTotalLengthAsInt();
 
-                //int srcPort=packet.get(TcpPacket.class).getHeader().getSrcPort().valueAsInt();
-                //int dstPort=packet.get(TcpPacket.class).getHeader().getDstPort().valueAsInt();
+                //int srcPort=packet.get(TcpPacketHandler.class).getHeader().getSrcPort().valueAsInt();
+                //int dstPort=packet.get(TcpPacketHandler.class).getHeader().getDstPort().valueAsInt();
                 String srcMac=packet.get(EthernetPacket.class).getHeader().getSrcAddr().toString();
                 String dstMac=packet.get(EthernetPacket.class).getHeader().getDstAddr().toString();
 

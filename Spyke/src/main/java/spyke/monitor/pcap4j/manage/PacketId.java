@@ -3,30 +3,29 @@ package spyke.monitor.pcap4j.manage;
 import java.io.Serializable;
 
 public class PacketId implements Serializable {
-    private String ip;
-    private String hour;
-    public PacketId(String ip, String hour){
-        this.ip=ip;
-        this.hour=hour;
+    private final String ip;
+    private final String hour;
+
+    public PacketId(final String ip, final String hour) {
+        this.ip = ip;
+        this.hour = hour;
     }
-    public String getIp(){return ip;}
-    public String getHour(){return hour;}
+
+    public String getIp() {
+        return this.ip;
+    }
+
+    public String getHour() {
+        return this.hour;
+    }
+
     @Override
-    public boolean equals(Object obj){
-        if (this == obj){
+    public boolean equals(final Object obj) {
+        if (this == obj) {
             return true;
         }
-        PacketId packetId = (PacketId) obj;
-        if (ip != null ?
-                !ip.equals(packetId.getIp())
-                :packetId.getIp() != null
-                && hour != null ?
-                !ip.equals(packetId.getHour())
-                :packetId.getIp() != null){
-            return false;
-        }
-        else {
-            return true;
-        }
+        final PacketId packetId = (PacketId) obj;
+        return this.ip != null ? this.ip.equals(packetId.getIp()) : packetId.getIp() != null
+                && this.hour != null ? this.ip.equals(packetId.getHour()) : packetId.getIp() == null;
     }
 }

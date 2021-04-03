@@ -14,10 +14,14 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 @EnableScheduling
 public class TaskConfig {
 
-    // FIXME create separate task executor for pcap4j
+    /**
+     * A task executor (object) that is instantiated, assembled, and otherwise managed by a Spring IoC container.
+     *
+     * @return The task executor.
+     */
     @Bean(name = "taskExecutor")
     public TaskExecutor threadPoolTaskExecutor() {
-        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        final ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
         executor.setCorePoolSize(10);   // core pool size 10
         executor.setQueueCapacity(200); // queue size 100
         executor.setMaxPoolSize(50);    // max pool size 50
@@ -25,9 +29,15 @@ public class TaskConfig {
         executor.initialize();
         return executor;
     }
+
+    /**
+     * A task scheduler (object) that is instantiated, assembled, and otherwise managed by a Spring IoC container.
+     *
+     * @return The task scheduler.
+     */
     @Bean(name = "taskScheduler")
     public TaskScheduler threadPoolTaskScheduler() {
-        ThreadPoolTaskScheduler scheduler = new ThreadPoolTaskScheduler();
+        final ThreadPoolTaskScheduler scheduler = new ThreadPoolTaskScheduler();
         scheduler.setPoolSize(100);
         scheduler.setThreadNamePrefix("Spyke Task Scheduler");   // name for task scheduler
         scheduler.initialize();

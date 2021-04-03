@@ -14,29 +14,33 @@ public class Period {
     @Column(name = "dropped_bytes")
     private long droppedBytes;
 
-    public Period(){
+    public Period() {
 
     }
 
-    public Period(PeriodId id, long passedBytes, long droppedBytes) {
+    public Period(final PeriodId id, final long passedBytes, final long droppedBytes) {
         this.id = id;
         this.passedBytes = passedBytes;
         this.droppedBytes = droppedBytes;
     }
 
     public PeriodId getId() {
-        return id;
+        return this.id;
     }
+
     public long getPassedBytes() {
-        return passedBytes;
+        return this.passedBytes;
     }
-    public void setPassedBytes(long passedBytes) {
+
+    public void setPassedBytes(final long passedBytes) {
         this.passedBytes = passedBytes;
     }
+
     public long getDroppedBytes() {
-        return droppedBytes;
+        return this.droppedBytes;
     }
-    public void setDroppedBytes(long droppedBytes) {
+
+    public void setDroppedBytes(final long droppedBytes) {
         this.droppedBytes = droppedBytes;
     }
 
@@ -44,11 +48,11 @@ public class Period {
     public String toString() {
         return "Period ["
                 + "PeriodId="
-                + id
+                + this.id
                 + ", passed_bytes="
-                + passedBytes
+                + this.passedBytes
                 + ", dropped_bytes="
-                + droppedBytes
+                + this.droppedBytes
                 + "]\n";
     }
 

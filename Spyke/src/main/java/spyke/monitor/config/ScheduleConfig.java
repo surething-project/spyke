@@ -15,25 +15,39 @@ import java.util.concurrent.ScheduledFuture;
 
 @Service
 public class ScheduleConfig {
+
     @Autowired
     private TaskScheduler taskScheduler;
     @Autowired
     private ApplicationContext applicationContext;
-    private Map<Device, ScheduledFuture<?>> schedules = new ConcurrentHashMap<Device, ScheduledFuture<?>>();
 
-    public CronTrigger createCronTrigger(long timeValue, TUnit tUnit){
-        CronTrigger cronTrigger;
-        if(timeValue==0)
+    /**
+     * A {@code Map} with key {@code device} and corresponding scheduled task.
+     */
+    private final Map<Device, ScheduledFuture<?>> schedules = new ConcurrentHashMap<Device, ScheduledFuture<?>>();
+
+    /**
+     * Creates a cron job with given time value and unit.
+     * <p />
+     * If time is 0, the job default to every hour.
+     *
+     * @param timeValue The time value.
+     * @param tUnit     The time unit.
+     * @return The cron job.
+     */
+    public CronTrigger createCronTrigger(final long timeValue, final TUnit tUnit) {
+        final CronTrigger cronTrigger;
+        if (timeValue == 0)
             return new CronTrigger("0 0 * * * ?");  // every hour as default
-        switch (tUnit){
+        switch (tUnit) {
             case m:
-                cronTrigger = new CronTrigger("0 */"+timeValue+" * * * ?"); // [0 */minute * * * ?]
+                cronTrigger = new CronTrigger("0 */" + timeValue + " * * * ?"); // [0 */minute * * * ?]
                 break;
             case h:
-                cronTrigger = new CronTrigger("0 0 */"+timeValue+" * * ?"); // [0 0 */hour * * ?]
+                cronTrigger = new CronTrigger("0 0 */" + timeValue + " * * ?"); // [0 0 */hour * * ?]
                 break;
             case d:
-                cronTrigger = new CronTrigger("0 0 0 */"+timeValue+" * ?"); // [0 0 0 */day * * ?]
+                cronTrigger = new CronTrigger("0 0 0 */" + timeValue + " * ?"); // [0 0 0 */day * * ?]
                 break;
             default:
                 cronTrigger = new CronTrigger("0 0 * * * ?");   // every hour as default
@@ -41,33 +55,33 @@ public class ScheduleConfig {
         return cronTrigger;
     }
 
-    public void setScheduler(Device device){
-        PeriodManager periodSender = applicationContext.getBean(PeriodManager.class);
-        CronTrigger cronTrigger = periodSender.setDevice(device);
+    public void setScheduler(final Device device) {
+        final PeriodManager periodSender = this.applicationContext.getBean(PeriodManager.class);
+        final CronTrigger cronTrigger = periodSender.setDevice(device);
 
-        ScheduledFuture<?> scheduledFuture = taskScheduler.schedule(
+        final ScheduledFuture<?> scheduledFuture = this.taskScheduler.schedule(
                 periodSender, cronTrigger
         );
-        schedules.put(device, scheduledFuture);
+        this.schedules.put(device, scheduledFuture);
     }
 
-    public boolean isCancelled(Device device){
-        return schedules.get(device).isCancelled();
+    public boolean isCancelled(final Device device) {
+        return this.schedules.get(device).isCancelled();
     }
 
-    public void cancelScheduler(Device device){
-        schedules.get(device).cancel(false);
+    public void cancelScheduler(final Device device) {
+        this.schedules.get(device).cancel(false);
     }
 
-    public boolean exists(Device device){
-        return schedules.containsKey(device);
+    public boolean exists(final Device device) {
+        return this.schedules.containsKey(device);
     }
 
-    public boolean isDone(Device device){
-        return schedules.get(device).isDone();
+    public boolean isDone(final Device device) {
+        return this.schedules.get(device).isDone();
     }
 
-    public ScheduledFuture<?> getScheduleByDevice(Device device){
-        return schedules.get(device);
+    public ScheduledFuture<?> getScheduleByDevice(final Device device) {
+        return this.schedules.get(device);
     }
 }

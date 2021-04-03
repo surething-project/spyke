@@ -1,6 +1,11 @@
 package spyke.monitor.pcap4j.task;
 
-import org.pcap4j.core.*;
+import org.pcap4j.core.NotOpenException;
+import org.pcap4j.core.PacketListener;
+import org.pcap4j.core.PcapHandle;
+import org.pcap4j.core.PcapNativeException;
+import org.pcap4j.core.PcapNetworkInterface;
+import org.pcap4j.core.Pcaps;
 import org.pcap4j.packet.IpV4Packet;
 import org.pcap4j.packet.Packet;
 import org.pcap4j.util.NifSelector;
@@ -29,70 +34,92 @@ Scopes a single bean definition to the lifecycle of a global HTTP Session. Typic
  */
 @Component
 @Scope("prototype")
-public class PacketHandler implements Runnable{
+public class PacketHandler implements Runnable {
+
+    /**
+     * The logger.
+     */
+    private static final Logger logger = LoggerFactory.getLogger(PacketHandler.class);
+
     @Autowired
     private ApplicationContext applicationContext;
     @Autowired
     private TaskExecutor taskExecutor;
-    private static final Logger logger = LoggerFactory.getLogger(PacketHandler.class);
 
     @Override
     public void run() {
         try {
             // TODO shouldn't be scanner
             //PcapNetworkInterface dev = getNetworkDevice();
-            PcapNetworkInterface dev = Pcaps.getDevByName("wlan0");
+            final PcapNetworkInterface dev = Pcaps.getDevByName("wlan0");
             logger.info("nif created: " + dev);
             if (dev == null) {
                 logger.error("No interface chosen.");
                 return;
             }
-            int snapLen = 65536;
-            PcapNetworkInterface.PromiscuousMode mode = PcapNetworkInterface.PromiscuousMode.PROMISCUOUS;
-            int timeout = 10;
-            PcapHandle handle = dev.openLive(snapLen, mode, timeout);
-            PacketListener listener = new PacketListener() {
+            final int snapLen = 65536;
+            final PcapNetworkInterface.PromiscuousMode mode = PcapNetworkInterface.PromiscuousMode.PROMISCUOUS;
+            final int timeout = 10;
+            final PcapHandle handle = dev.openLive(snapLen, mode, timeout);
+            final PacketListener listener = new PacketListener() {
                 @Override
-                public void gotPacket(Packet packet) {
+                public void gotPacket(final Packet packet) {
                     // Override the default gotPacket() function and process packet
                     //logger.info("Packet received: " + packet);
-                    IpV4Packet ipV4Packet = packet.get(IpV4Packet.class);
-                    PacketReceiver packetReceiver = applicationContext.getBean(PacketReceiver.class);
-                    packetReceiver.packet=packet;
-                    taskExecutor.execute(packetReceiver);
+                    final IpV4Packet ipV4Packet = packet.get(IpV4Packet.class);
+                    final PacketReceiver packetReceiver = PacketHandler.this.applicationContext.getBean(PacketReceiver.class);
+                    packetReceiver.packet = packet;
+                    PacketHandler.this.taskExecutor.execute(packetReceiver);
                 }
             };
             // Tell the handle to loop using the listener we created
             try {
-                int maxPackets = -1;   // -1 = infinity
+                final int maxPackets = -1;   // -1 = infinity
                 handle.loop(maxPackets, listener);
-            } catch (InterruptedException e) {
+            } catch (final InterruptedException e) {
                 logger.error("Listening packet interrupted: " + e.getMessage());
             }
             logger.info("Listening packet exited...");
             handle.close();
-        } catch (PcapNativeException | NotOpenException | NullPointerException e) {
+        } catch (final PcapNativeException | NotOpenException | NullPointerException e) {
             logger.error("Listening packet exception: " + e.getMessage());
         }
     }
 
-    private synchronized void isOverLimited(Device device, int data){
-        /* TODO this is outdated, since new approach is added
-        if(device.getStatus().equals("ALLOWED") && (device.getRule().getMedian()+device.getRule().getDeviation()<=pcap4j.getUsage(device.getIp(), data))) {
-            Table tableIn = new Table();
+    /**
+     * TODO this is outdated, since new approach is added
+     *
+     * @param device The device.
+     * @param data   The data.
+     */
+    private synchronized void isOverLimited(final Device device, final int data) {
+        /*
+        if (device.getStatus().equals("ALLOWED") &&
+                (device.getRule().getMedian() + device.getRule().getDeviation() <= pcap4j.getUsage(
+                        device.getIp(),
+                        data
+                ))) {
+            final Table tableIn = new Table();
             tableIn.setSource(device.getIp());
             tableIn.setFilter(Filter.ACCEPT);
-            Table tableOut = new Table();
+            final Table tableOut = new Table();
             tableOut.setDestination(device.getIp());
             tableOut.setFilter(Filter.ACCEPT);
             iptables.deleteTable(tableIn);
             iptables.deleteTable(tableOut);
-            database.changeDevice(device.getIp(), device.getMac(), device.getName(), "EXCEEDED", device.getRule().getMedian(), device.getRule().getDeviation());
+            database.changeDevice(
+                    device.getIp(),
+                    device.getMac(),
+                    device.getName(),
+                    "EXCEEDED",
+                    device.getRule().getMedian(),
+                    device.getRule().getDeviation()
+            );
         }
-        */
+         */
     }
 
-    private void checkPayload(IpV4Packet ipV4Packet){
+    private void checkPayload(final IpV4Packet ipV4Packet) {
         // Only UDP & TCP
     }
 
@@ -100,7 +127,7 @@ public class PacketHandler implements Runnable{
         PcapNetworkInterface device = null;
         try {
             device = new NifSelector().selectNetworkInterface();
-        } catch (IOException e) {
+        } catch (final IOException e) {
             logger.error("Interface exception: " + e.getMessage());
         }
         return device;

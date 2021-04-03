@@ -19,11 +19,11 @@ public class Upload implements Serializable {
     private long protocol;
     private long data;
 
-    public Upload(){
+    public Upload() {
 
     }
 
-    public Upload(String ip, String mac, String destinationIp, Date time, long protocol, long data) {
+    public Upload(final String ip, final String mac, final String destinationIp, final Date time, final long protocol, final long data) {
         this.ip = ip;
         this.mac = mac;
         this.destinationIp = destinationIp;
@@ -33,24 +33,30 @@ public class Upload implements Serializable {
     }
 
     public String getip() {
-        return ip;
+        return this.ip;
     }
+
     public String getmac() {
-        return mac;
+        return this.mac;
     }
+
     public String getDestinationIp() {
-        return destinationIp;
+        return this.destinationIp;
     }
+
     public Date getTime() {
-        return time;
+        return this.time;
     }
+
     public long getProtocol() {
-        return protocol;
+        return this.protocol;
     }
+
     public long getData() {
-        return data;
+        return this.data;
     }
-    public void addData(long data) {
-        this.data=+data;
+
+    public void addData(final long data) {
+        this.data = +data;
     }
 }

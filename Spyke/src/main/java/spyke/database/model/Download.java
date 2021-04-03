@@ -19,11 +19,11 @@ public class Download implements Serializable {
     private long protocol;
     private long data;
 
-    public Download(){
+    public Download() {
 
     }
 
-    public Download(String ip, String mac, String sourceIp, Date time, long protocol, long data) {
+    public Download(final String ip, final String mac, final String sourceIp, final Date time, final long protocol, final long data) {
         this.ip = ip;
         this.mac = mac;
         this.sourceIp = sourceIp;
@@ -33,22 +33,27 @@ public class Download implements Serializable {
     }
 
     public String getip() {
-        return ip;
+        return this.ip;
     }
+
     public String getmac() {
-        return mac;
+        return this.mac;
     }
+
     public String getSourceIp() {
-        return sourceIp;
+        return this.sourceIp;
     }
+
     public Date getTime() {
-        return time;
+        return this.time;
     }
+
     public long getProtocol() {
-        return protocol;
+        return this.protocol;
     }
+
     public long getData() {
-        return data;
+        return this.data;
     }
 
 }

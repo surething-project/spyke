@@ -6,7 +6,7 @@ import spyke.database.model.Device;
 import spyke.database.repository.DeviceRepository;
 import spyke.database.model.types.Status;
 import spyke.monitor.iptables.component.Iptables;
-import spyke.monitor.iptables.util.OperatingSystem;
+import spyke.monitor.util.OperatingSystem;
 import spyke.monitor.config.ScheduleConfig;
 
 import org.slf4j.Logger;
@@ -26,7 +26,7 @@ public class DeviceManager implements Runnable {
     @Override
     public void run() {
         // restore iptables rules
-        if (iptables.restoreRules()) {
+        if (iptables.restoreDefaultRules()) {
             // FIXME log
         }
         // add iptables

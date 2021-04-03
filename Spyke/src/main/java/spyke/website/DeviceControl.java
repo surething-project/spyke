@@ -19,7 +19,7 @@ import spyke.database.model.types.BUnit;
 import spyke.database.model.types.Status;
 import spyke.database.model.types.TUnit;
 import spyke.monitor.iptables.component.Iptables;
-import spyke.monitor.iptables.util.OperatingSystem;
+import spyke.monitor.util.OperatingSystem;
 import spyke.monitor.config.ScheduleConfig;
 import spyke.monitor.manage.IptablesLog;
 

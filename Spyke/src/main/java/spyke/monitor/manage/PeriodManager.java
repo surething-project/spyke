@@ -13,7 +13,7 @@ import spyke.database.model.PeriodId;
 import spyke.database.repository.PeriodRepository;
 import spyke.database.model.types.TUnit;
 import spyke.monitor.iptables.component.Iptables;
-import spyke.monitor.iptables.util.OperatingSystem;
+import spyke.monitor.util.OperatingSystem;
 import spyke.monitor.config.ScheduleConfig;
 
 import java.util.Date;

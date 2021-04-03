@@ -41,21 +41,21 @@ public class Device implements Serializable {
     @Column(name = "period_unit")
     private TUnit periodUnit;
 
-    public Device(){
+    public Device() {
 
     }
 
     public Device(
-            String ip,
-            String mac,
-            String name,
-            Status status,
-            long quota,
-            long bandwidth,
-            long period,
-            BUnit quotaBUnit,
-            BUnit bandwidthBUnit,
-            TUnit periodUnit
+            final String ip,
+            final String mac,
+            final String name,
+            final Status status,
+            final long quota,
+            final long bandwidth,
+            final long period,
+            final BUnit quotaBUnit,
+            final BUnit bandwidthBUnit,
+            final TUnit periodUnit
     ) {
         this.ip = ip;
         this.mac = mac;
@@ -70,103 +70,109 @@ public class Device implements Serializable {
     }
 
     public String getIp() {
-        return ip;
+        return this.ip;
     }
+
     public String getMac() {
-        return mac;
+        return this.mac;
     }
+
     public String getName() {
-        return name;
+        return this.name;
     }
+
     public Status getStatus() {
-        return status;
+        return this.status;
     }
-    public void setStatus(Status status) {
+
+    public void setStatus(final Status status) {
         this.status = status;
     }
+
     public long getQuota() {
-        return quota;
+        return this.quota;
     }
-    public void setQuota(long quota) {
+
+    public void setQuota(final long quota) {
         this.quota = quota;
     }
+
     public long getBandwidth() {
-        return bandwidth;
+        return this.bandwidth;
     }
-    public void setBandwidth(long bandwidth) {
+
+    public void setBandwidth(final long bandwidth) {
         this.bandwidth = bandwidth;
     }
+
     public BUnit getQuotaBUnit() {
-        return quotaBUnit;
+        return this.quotaBUnit;
     }
-    public void setQuotaBUnit(BUnit quotaBUnit) {
+
+    public void setQuotaBUnit(final BUnit quotaBUnit) {
         this.quotaBUnit = quotaBUnit;
     }
+
     public BUnit getBandwidthBUnit() {
-        return bandwidthBUnit;
+        return this.bandwidthBUnit;
     }
-    public void setBandwidthBUnit(BUnit bandwidthBUnit) {
+
+    public void setBandwidthBUnit(final BUnit bandwidthBUnit) {
         this.bandwidthBUnit = bandwidthBUnit;
     }
 
-    public long getPeriod(){
-        return period;
+    public long getPeriod() {
+        return this.period;
     }
-    public void setPeriod(long period){
-        this.period=period;
+
+    public void setPeriod(final long period) {
+        this.period = period;
     }
+
     public TUnit getPeriodUnit() {
-        return periodUnit;
+        return this.periodUnit;
     }
-    public void setPeriodUnit(TUnit periodUnit) {
+
+    public void setPeriodUnit(final TUnit periodUnit) {
         this.periodUnit = periodUnit;
     }
 
     @Override
-    public boolean equals(Object obj){
-        if (this == obj){
-            return true;
+    public int hashCode() {
+        if (this.ip == null || this.mac == null) {
+            return -1;
         }
-        Device device = (Device) obj;
-        if (mac != null ?
-                !mac.equals(device.getMac())
-                :device.getMac() != null
-            && ip != null ?
-                !ip.equals(device.getIp())
-                :device.getIp() != null){
-            return false;
-        }
-        else {
-            return true;
-        }
+        return (this.ip + this.mac).hashCode();
     }
 
     @Override
-    public int hashCode(){
-        if(this.ip == null || this.mac == null){
-            return -1;
+    public boolean equals(final Object obj) {
+        if (this == obj) {
+            return true;
         }
-        return (this.ip+this.mac).hashCode();
+        final Device device = (Device) obj;
+        return this.mac != null ? this.mac.equals(device.getMac()) : device.getMac() != null
+                && this.ip != null ? this.ip.equals(device.getIp()) : device.getIp() == null;
     }
 
     @Override
     public String toString() {
         return "Device [ip="
-                + ip
+                + this.ip
                 + ", mac="
-                + mac
+                + this.mac
                 + ", name="
-                + name
+                + this.name
                 + ", status="
-                + status
+                + this.status
                 + ", quota="
-                + quota
+                + this.quota
                 + " "
-                + quotaBUnit
+                + this.quotaBUnit
                 + ", bandwidth="
-                + bandwidth
+                + this.bandwidth
                 + " "
-                + bandwidthBUnit
+                + this.bandwidthBUnit
                 + "]\n";
     }
 }

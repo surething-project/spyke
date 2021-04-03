@@ -12,57 +12,63 @@ import java.util.List;
 
 @Service
 public class PacketManager {
-    private Logger logger = LoggerFactory.getLogger(PacketManager.class);
-    private HashMap<PacketId, List<Download>> downloadPacketManager = new HashMap<PacketId, List<Download>>();
-    private HashMap<PacketId, List<Upload>> uploadPacketManager = new HashMap<PacketId, List<Upload>>();
-    public HashMap<PacketId, List<Download>> getDownloadPacketManager(){
-        return downloadPacketManager;
+    private final Logger logger = LoggerFactory.getLogger(PacketManager.class);
+    private final HashMap<PacketId, List<Download>> downloadPacketManager = new HashMap<PacketId, List<Download>>();
+    private final HashMap<PacketId, List<Upload>> uploadPacketManager = new HashMap<PacketId, List<Upload>>();
+
+    public HashMap<PacketId, List<Download>> getDownloadPacketManager() {
+        return this.downloadPacketManager;
     }
-    public HashMap<PacketId, List<Upload>> getUploadPacketManager(){
-        return uploadPacketManager;
+
+    public HashMap<PacketId, List<Upload>> getUploadPacketManager() {
+        return this.uploadPacketManager;
     }
-    public void addDownloadPacket(String ip, String hour, Download download){
-        PacketId packetId = new PacketId(ip, hour);
-        if(!downloadPacketManager.containsKey(packetId)){
-            List<Download> q = new LinkedList<>();
-            if(q.add(download))
-                downloadPacketManager.put(packetId, q);
+
+    public void addDownloadPacket(final String ip, final String hour, final Download download) {
+        final PacketId packetId = new PacketId(ip, hour);
+        if (!this.downloadPacketManager.containsKey(packetId)) {
+            final List<Download> q = new LinkedList<>();
+            if (q.add(download))
+                this.downloadPacketManager.put(packetId, q);
             else
-                logger.error("Download List add failed!");
+                this.logger.error("Download List add failed!");
         } else {
-            List<Download> q = downloadPacketManager.get(packetId);
-            if(q.add(download))
-                downloadPacketManager.put(packetId, q);
+            final List<Download> q = this.downloadPacketManager.get(packetId);
+            if (q.add(download))
+                this.downloadPacketManager.put(packetId, q);
             else
-                logger.error("Download List add failed!");
+                this.logger.error("Download List add failed!");
         }
     }
-    public void addUploadPacket(String ip, String hour, Upload upload){
-        PacketId packetId = new PacketId(ip, hour);
-        if(!uploadPacketManager.containsKey(packetId)){
-            List<Upload> q = new LinkedList<>();
-            if(q.add(upload))
-                uploadPacketManager.put(packetId, q);
+
+    public void addUploadPacket(final String ip, final String hour, final Upload upload) {
+        final PacketId packetId = new PacketId(ip, hour);
+        if (!this.uploadPacketManager.containsKey(packetId)) {
+            final List<Upload> q = new LinkedList<>();
+            if (q.add(upload))
+                this.uploadPacketManager.put(packetId, q);
             else
-                logger.error("Upload List add failed!");
+                this.logger.error("Upload List add failed!");
         } else {
-            List<Upload> q = uploadPacketManager.get(packetId);
-            if(q.add(upload))
-                uploadPacketManager.put(packetId, q);
+            final List<Upload> q = this.uploadPacketManager.get(packetId);
+            if (q.add(upload))
+                this.uploadPacketManager.put(packetId, q);
             else
-                logger.error("Upload List add failed!");
+                this.logger.error("Upload List add failed!");
         }
     }
-    public List<Download> retrieveDownloadList(String ip, String hour){
-        PacketId packetId = new PacketId(ip, hour);
-        List<Download> q = downloadPacketManager.get(packetId);
-        downloadPacketManager.remove(packetId);
+
+    public List<Download> retrieveDownloadList(final String ip, final String hour) {
+        final PacketId packetId = new PacketId(ip, hour);
+        final List<Download> q = this.downloadPacketManager.get(packetId);
+        this.downloadPacketManager.remove(packetId);
         return q;
     }
-    public List<Upload> retrieveUploadList(String ip, String hour){
-        PacketId packetId = new PacketId(ip, hour);
-        List<Upload> q = uploadPacketManager.get(packetId);
-        uploadPacketManager.remove(packetId);
+
+    public List<Upload> retrieveUploadList(final String ip, final String hour) {
+        final PacketId packetId = new PacketId(ip, hour);
+        final List<Upload> q = this.uploadPacketManager.get(packetId);
+        this.uploadPacketManager.remove(packetId);
         return q;
     }
 }

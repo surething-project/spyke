@@ -24,64 +24,52 @@ public class PeriodId implements Serializable {
 
     }
 
-    public PeriodId(Date startTime, Date endTime) {
+    public PeriodId(final Date startTime, final Date endTime) {
         this.startTime = startTime;
         this.endTime = endTime;
     }
 
     public Date getStartTime() {
-        return startTime;
+        return this.startTime;
     }
 
     public Date getEndTime() {
-        return endTime;
-    }
-
-    public void setDevice(Device device) {
-        this.device = device;
+        return this.endTime;
     }
 
     public Device getDevice() {
-        return device;
+        return this.device;
     }
 
-    @Override
-    public boolean equals(Object obj) {
-        if (!(obj instanceof PeriodId)) return false;
-        PeriodId periodId = (PeriodId) obj;
-        if (startTime != null ?
-                !startTime.equals(periodId.getStartTime())
-                :periodId.getStartTime() != null
-                && endTime != null ?
-                !endTime.equals(periodId.getEndTime())
-                :periodId.getEndTime() != null
-                && device != null ?
-                !device.equals(periodId.getDevice())
-                :periodId.getDevice() != null
-        ){
-            return false;
-        }
-        else {
-            return true;
-        }
+    public void setDevice(final Device device) {
+        this.device = device;
     }
 
     @Override
     public int hashCode() {
-        if(this.startTime == null || this.endTime == null){
+        if (this.startTime == null || this.endTime == null) {
             return -1;
         }
-        return (this.startTime.toString()+this.endTime.toString()+device.getMac()).hashCode();
+        return (this.startTime.toString() + this.endTime.toString() + this.device.getMac()).hashCode();
+    }
+
+    @Override
+    public boolean equals(final Object obj) {
+        if (!(obj instanceof PeriodId)) return false;
+        final PeriodId periodId = (PeriodId) obj;
+        return this.startTime != null ? this.startTime.equals(periodId.getStartTime()) : periodId.getStartTime() != null
+                && this.endTime != null ? this.endTime.equals(periodId.getEndTime()) : periodId.getEndTime() != null
+                && this.device != null ? this.device.equals(periodId.getDevice()) : periodId.getDevice() == null;
     }
 
     @Override
     public String toString() {
         return "PeriodId [start_time="
-                + startTime
+                + this.startTime
                 + ", end_time="
-                + endTime
+                + this.endTime
                 + ", device_mac="
-                + device.getMac()
+                + this.device.getMac()
                 + "]\n";
     }
 
