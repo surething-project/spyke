@@ -55,6 +55,7 @@ public class Iptables {
      */
     public boolean restoreDefaultRules() {
         // FIXME update to FS
+
         if (execute("sudo /sbin/iptables-restore < " + "iptables.ipv4.conf")) {
             this.logger.info("Iptables is restored with spyke default rules.");
             return true;

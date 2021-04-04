@@ -1,12 +1,11 @@
 package spyke.monitor.iptables;
 
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 import spyke.monitor.util.OperatingSystem;
 
 import java.io.BufferedReader;
@@ -14,14 +13,16 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 
-@RunWith(SpringJUnit4ClassRunner.class)
+import static org.assertj.core.api.Assertions.assertThat;
+
+@ExtendWith(SpringExtension.class)
 @SpringBootTest
 public class IptablesTest {
 
     private ProcessBuilder processBuilder;
 
-    @Before
-    public void setup() {
+    @BeforeEach
+    public void setup() throws IOException {
         final String task = "sudo /usr/bin/which iptables";
         this.processBuilder = new ProcessBuilder("/bin/sh", "-c", task);
 
@@ -33,14 +34,11 @@ public class IptablesTest {
             directory.mkdirs();
         }
         final File file = new File(directoryName + File.separator + "iptables.log");
-        try {
-            file.createNewFile();
-        } catch (final IOException e) {
-            e.printStackTrace();
-        }
+
+        file.createNewFile();
     }
 
-    @After
+    @AfterEach
     public void erase() {
         final String PATH = System.getProperty("user.dir");
         final String directoryName = PATH.concat(File.separator + "iptables-log");
@@ -64,30 +62,33 @@ public class IptablesTest {
     }
 
     @Test
-    public void getIptables() {
+    public void getIptables() throws IOException, InterruptedException {
         if (OperatingSystem.isLinux()) {
             final StringBuilder input = new StringBuilder();
             final StringBuilder error = new StringBuilder();
-            try {
+            final Process process = this.processBuilder.start();
+            try (final BufferedReader inputReader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
                 String line;
-                final Process process = this.processBuilder.start();
-                final BufferedReader inputReader = new BufferedReader(new InputStreamReader(process.getInputStream()));
                 while ((line = inputReader.readLine()) != null) {
                     input.append(line);
                 }
-                final BufferedReader errorReader = new BufferedReader(new InputStreamReader(process.getErrorStream()));
+            } catch (final IOException ignored) {
+            }
+            try (final BufferedReader errorReader = new BufferedReader(new InputStreamReader(process.getErrorStream()))) {
+                String line;
                 while ((line = errorReader.readLine()) != null) {
                     error.append(line);
                 }
-                process.waitFor();
-                inputReader.close();
-                errorReader.close();
-            } catch (final Exception ignored) {
-                System.out.println("Exception:");
-                System.out.println(ignored.getMessage());
+            } catch (final IOException ignored) {
             }
-            Assert.assertNotEquals("", input.toString());
-            Assert.assertEquals("", error.toString());
+
+            assertThat(input)
+                    .as("List of input should not be empty")
+                    .isNotEmpty();
+            assertThat(error)
+                    .as("List of error should be empty")
+                    .isEmpty();
+            process.waitFor();
         }
     }
 

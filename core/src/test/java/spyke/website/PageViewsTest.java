@@ -1,22 +1,22 @@
 package spyke.website;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.boot.web.server.LocalServerPort;
 import org.springframework.http.ResponseEntity;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import java.io.File;
 import java.net.URL;
 
-import static org.junit.Assert.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 
-@RunWith(SpringRunner.class)
+@ExtendWith(SpringExtension.class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 public class PageViewsTest {
 
@@ -28,28 +28,28 @@ public class PageViewsTest {
     @Autowired
     private TestRestTemplate template;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception {
-        this.base = new URL("http://localhost:" + port + "/");
+        this.base = new URL("http://localhost:" + this.port + "/");
     }
 
-    @After
+    @AfterEach
     public void erase() {
-        String PATH = System.getProperty("user.dir");
-        String directoryName = PATH.concat(File.separator+"iptables-log");
-        File logsPath = new File(directoryName.concat(File.separator+"log"));
-        File directory = new File(directoryName);
-        if (logsPath.exists()){
-            String[]entries = logsPath.list();
-            for(String s: entries){
-                File currentFile = new File(logsPath.getPath(),s);
+        final String PATH = System.getProperty("user.dir");
+        final String directoryName = PATH.concat(File.separator + "iptables-log");
+        final File logsPath = new File(directoryName.concat(File.separator + "log"));
+        final File directory = new File(directoryName);
+        if (logsPath.exists()) {
+            final String[] entries = logsPath.list();
+            for (final String s : entries) {
+                final File currentFile = new File(logsPath.getPath(), s);
                 currentFile.delete();
             }
         }
-        if (directory.exists()){
-            String[]entries = directory.list();
-            for(String s: entries){
-                File currentFile = new File(directory.getPath(),s);
+        if (directory.exists()) {
+            final String[] entries = directory.list();
+            for (final String s : entries) {
+                final File currentFile = new File(directory.getPath(), s);
                 currentFile.delete();
             }
         }
@@ -58,8 +58,12 @@ public class PageViewsTest {
 
     @Test
     public void getDevices() throws Exception {
-        ResponseEntity<String> response = template.getForEntity(base.toString()+"devices",
-                String.class);
-        assertEquals(response.getStatusCodeValue(), 200);
+        final ResponseEntity<String> response = this.template.getForEntity(
+                this.base.toString() + "devices",
+                String.class
+        );
+        assertThat(response.getStatusCodeValue())
+                .as("The response code should be 200")
+                .isEqualTo(200);
     }
 }

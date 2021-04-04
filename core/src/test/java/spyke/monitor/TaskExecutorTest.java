@@ -1,21 +1,20 @@
 package spyke.monitor;
 
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.ApplicationContext;
 import org.springframework.core.task.TaskExecutor;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 import spyke.CommandLine;
 import spyke.database.model.Device;
-import spyke.database.repository.PeriodRepository;
+import spyke.database.model.types.BUnit;
 import spyke.database.model.types.Status;
 import spyke.database.model.types.TUnit;
-import spyke.database.model.types.BUnit;
+import spyke.database.repository.PeriodRepository;
 import spyke.monitor.config.ScheduleConfig;
 import spyke.monitor.manage.DeviceManager;
 
@@ -25,8 +24,10 @@ import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.concurrent.TimeUnit;
 
+import static org.assertj.core.api.Assertions.assertThat;
 
-@RunWith(SpringJUnit4ClassRunner.class)
+
+@ExtendWith(SpringExtension.class)
 @SpringBootTest
 public class TaskExecutorTest {
 
@@ -49,11 +50,12 @@ public class TaskExecutorTest {
 
     private Device device;
 
-    @Before
+    @BeforeEach
     public void setup() {
-        deviceSender = applicationContext.getBean(DeviceManager.class);
-        taskExecutor.execute(deviceSender);
-        device = new Device("192.168.8.24",
+        this.deviceSender = this.applicationContext.getBean(DeviceManager.class);
+        this.taskExecutor.execute(this.deviceSender);
+        this.device = new Device(
+                "192.168.8.24",
                 "f0:18:98:05:64:90",
                 "Shengs-MBP",
                 Status.NEW,
@@ -62,26 +64,27 @@ public class TaskExecutorTest {
                 0,
                 BUnit.kb,
                 BUnit.kb,
-                TUnit.m);
+                TUnit.m
+        );
     }
 
-    @After
+    @AfterEach
     public void erase() {
-        String PATH = System.getProperty("user.dir");
-        String directoryName = PATH.concat(File.separator+"iptables-log");
-        File logsPath = new File(directoryName.concat(File.separator+"log"));
-        File directory = new File(directoryName);
-        if (logsPath.exists()){
-            String[]entries = logsPath.list();
-            for(String s: entries){
-                File currentFile = new File(logsPath.getPath(),s);
+        final String PATH = System.getProperty("user.dir");
+        final String directoryName = PATH.concat(File.separator + "iptables-log");
+        final File logsPath = new File(directoryName.concat(File.separator + "log"));
+        final File directory = new File(directoryName);
+        if (logsPath.exists()) {
+            final String[] entries = logsPath.list();
+            for (final String s : entries) {
+                final File currentFile = new File(logsPath.getPath(), s);
                 currentFile.delete();
             }
         }
-        if (directory.exists()){
-            String[]entries = directory.list();
-            for(String s: entries){
-                File currentFile = new File(directory.getPath(),s);
+        if (directory.exists()) {
+            final String[] entries = directory.list();
+            for (final String s : entries) {
+                final File currentFile = new File(directory.getPath(), s);
                 currentFile.delete();
             }
         }
@@ -89,8 +92,9 @@ public class TaskExecutorTest {
     }
 
     @Test
-    public void twoDeviceTest(){
-        Device device2 = new Device("192.168.8.71",
+    public void twoDeviceTest() {
+        final Device device2 = new Device(
+                "192.168.8.71",
                 "b0:4e:26:57:b8:33",
                 "HS110",
                 Status.NEW,
@@ -99,68 +103,85 @@ public class TaskExecutorTest {
                 0,
                 BUnit.kb,
                 BUnit.kb,
-                TUnit.m);
+                TUnit.m
+        );
 
-        device.setPeriod(15);
-        scheduleConfig.setScheduler(device);
-        Assert.assertFalse(scheduleConfig.isDone(device));
+        final int periodFifteenMinutes = 15;
+        this.device.setPeriod(periodFifteenMinutes);
+        this.scheduleConfig.setScheduler(this.device);
+        assertThat(this.scheduleConfig.isDone(this.device))
+                .as("Scheduled config of device1 is not done")
+                .isFalse();
 
+        final int periodTenMinutes = 10;
+        device2.setPeriod(periodTenMinutes);
+        this.scheduleConfig.setScheduler(device2);
+        assertThat(this.scheduleConfig.isDone(device2))
+                .as("Scheduled config of device2 is not done")
+                .isFalse();
 
-        device2.setPeriod(10);
-        scheduleConfig.setScheduler(device2);
-        Assert.assertFalse(scheduleConfig.isDone(device2));
-
-        Date date = new Date();
-        Calendar calendar = GregorianCalendar.getInstance();
+        final Date date = new Date();
+        final Calendar calendar = GregorianCalendar.getInstance();
         calendar.setTime(date);
-        int now = calendar.get(Calendar.MINUTE);
+        final int now = calendar.get(Calendar.MINUTE);
 
-        System.out.println("Time: "+scheduleConfig.getScheduleByDevice(device).getDelay(TimeUnit.MINUTES)+" and "+(4-(now%5)));
-        // (4-(now%10)) time left to each 5 minutes
-        Assert.assertTrue((14-(now%15))<= scheduleConfig.getScheduleByDevice(device).getDelay(TimeUnit.MINUTES) &&
-                scheduleConfig.getScheduleByDevice(device).getDelay(TimeUnit.MINUTES)<(15-(now%15))
-        );
+        final long deviceOneDelay = this.scheduleConfig.getScheduleByDevice(this.device).getDelay(TimeUnit.MINUTES);
+        assertThat((14 - (now % periodFifteenMinutes)) <= deviceOneDelay && deviceOneDelay < (15 - (now % periodFifteenMinutes)))
+                .as("(14 - (now % 15)) time left to each 15 minutes")
+                .isTrue();
 
-        System.out.println("Time: "+scheduleConfig.getScheduleByDevice(device).getDelay(TimeUnit.MINUTES)+" and "+(9-(now%10)));
-        // (9-(now%10)) time left to each 10 minutes
-        Assert.assertTrue((9-(now%10))<= scheduleConfig.getScheduleByDevice(device2).getDelay(TimeUnit.MINUTES) &&
-                scheduleConfig.getScheduleByDevice(device2).getDelay(TimeUnit.MINUTES)<(10-(now%10))
-        );
+        final long deviceTwoDelay = this.scheduleConfig.getScheduleByDevice(device2).getDelay(TimeUnit.MINUTES);
+        assertThat((9 - (now % periodTenMinutes)) <= deviceTwoDelay && deviceTwoDelay < (10 - (now % periodTenMinutes)))
+                .as("(9 - (now % 10)) time left to each 10 minutes")
+                .isTrue();
     }
 
     @Test
     public void taskCreate() {
-        Assert.assertNotEquals(null, deviceSender);
+
+        assertThat(this.deviceSender)
+                .as("Device manager should not be null")
+                .isNotNull();
     }
 
     @Test
-    public void taskAdd(){
-        scheduleConfig.setScheduler(device);
-        Assert.assertTrue(scheduleConfig.exists(device));
+    public void taskAdd() {
 
+        this.scheduleConfig.setScheduler(this.device);
+        assertThat(this.scheduleConfig.exists(this.device))
+                .as("Scheduled config exists")
+                .isTrue();
     }
 
     @Test
-    public void taskRunning(){
-        Date date = new Date();
-        device.setPeriod(5);
-        scheduleConfig.setScheduler(device);
-        Assert.assertFalse(scheduleConfig.isDone(device));
-        Calendar calendar = GregorianCalendar.getInstance();
+    public void taskRunning() {
+
+        final Date date = new Date();
+        this.device.setPeriod(5);
+        this.scheduleConfig.setScheduler(this.device);
+        assertThat(this.scheduleConfig.isDone(this.device))
+                .as("Scheduled config should not be created.")
+                .isFalse();
+
+        final Calendar calendar = GregorianCalendar.getInstance();
         calendar.setTime(date);
-        int now = calendar.get(Calendar.MINUTE);
-        // (9-(now%10)) time left to each 10 minutes
-        Assert.assertTrue((4-(now%5))<= scheduleConfig.getScheduleByDevice(device).getDelay(TimeUnit.MINUTES) &&
-                scheduleConfig.getScheduleByDevice(device).getDelay(TimeUnit.MINUTES)<(5-(now%5))
-        );
+        final int now = calendar.get(Calendar.MINUTE);
+        final long deviceDelay = this.scheduleConfig.getScheduleByDevice(this.device).getDelay(TimeUnit.MINUTES);
+        assertThat((4 - (now % 5)) <= deviceDelay && deviceDelay < (5 - (now % 5)))
+                .as("(4 - (now % 5)) time left to each 5 minutes")
+                .isTrue();
     }
 
     @Test
     public void taskCancel() {
-        scheduleConfig.setScheduler(device);
-        Assert.assertFalse(scheduleConfig.isCancelled(device));
+        this.scheduleConfig.setScheduler(this.device);
+        assertThat(this.scheduleConfig.isCancelled(this.device))
+                .as("Scheduled config is not cancelled")
+                .isFalse();
 
-        scheduleConfig.cancelScheduler(device);
-        Assert.assertTrue(scheduleConfig.isCancelled(device));
+        this.scheduleConfig.cancelScheduler(this.device);
+        assertThat(this.scheduleConfig.isCancelled(this.device))
+                .as("Scheduled config is cancelled")
+                .isTrue();
     }
 }
