@@ -4,9 +4,7 @@ RUN echo 'deb-src  http://deb.debian.org/debian  stretch main' >> /etc/apt/sourc
 
 RUN apt-get update -y
 
-# seperating this to seperate error
 RUN apt-get install -y openjdk-8-jdk
-
 RUN apt-get install -y maven
 RUN apt-get install -y iptables
 RUN apt-get install -y hostapd
@@ -26,5 +24,4 @@ COPY . .
 
 RUN mvn package -DskipTests=true
 
-#ENTRYPOINT ["tail", "-f", "/dev/null"]
 ENTRYPOINT ["/bin/sh", "-c", "/etc/spyke/docker/spyke/startup.sh"]

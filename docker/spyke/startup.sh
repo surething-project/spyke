@@ -61,12 +61,12 @@ service hostapd start >> /etc/spyke/script_output.txt  # hostapd_cli all_sta -> 
 service dnsmasq start >> /etc/spyke/script_output.txt  # cat /var/lib/misc/dnsmasq.leases -> see connect devices
 
 mv /etc/spyke/docker/spyke/iptables.ipv4.conf /etc/iptables.ipv4.conf
-/sbin/iptables-restore < /etc/iptables.ipv4.conf
 
 # restart interface
 ip link set ${wlan} up
 ip addr flush dev ${wlan}
 ip addr add 192.168.8.1/24 dev ${wlan}
 
-mvn spring-boot:run
 # tail -f /dev/null
+#mvn spring-boot:run -Dagentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=8000
+mvn spring-boot:run

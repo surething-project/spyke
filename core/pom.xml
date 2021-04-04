@@ -69,6 +69,11 @@
             <artifactId>pcap4j-packetfactory-static</artifactId>
         </dependency>
         <!-- others -->
+        <dependency>
+            <groupId>org.immutables</groupId>
+            <artifactId>value</artifactId>
+            <scope>provided</scope>
+        </dependency>
     </dependencies>
 
     <build>

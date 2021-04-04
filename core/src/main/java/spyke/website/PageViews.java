@@ -9,8 +9,8 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import spyke.database.model.Device;
 import spyke.database.repository.DeviceRepository;
-import spyke.monitor.iptables.component.Iptables;
-import spyke.monitor.manage.IptablesLog;
+import spyke.engine.iptables.component.Iptables;
+import spyke.engine.manage.IptablesLog;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
@@ -21,6 +21,9 @@ import java.util.Map;
 @Controller
 public class PageViews {
 
+    /**
+     * The logger.
+     */
     private static final Logger logger = LoggerFactory.getLogger(PageViews.class);
 
     @Autowired
@@ -31,32 +34,33 @@ public class PageViews {
     private IptablesLog iptablesLog;
 
     @GetMapping("/devices")
-    public String devices(Model model) {
-        List<Device> devices = deviceRepository.findAll();
+    public String devices(final Model model) {
+        final List<Device> devices = this.deviceRepository.findAll();
         model.addAttribute("devices", devices);
         return "devices";
     }
 
     @GetMapping("/device/{mac}")
-    public String device(@PathVariable("mac") String mac, Model model) {
-        Device device = deviceRepository.findById(mac).get();
+    public String device(@PathVariable("mac") final String mac, final Model model) {
+        final Device device = this.deviceRepository.findById(mac).get();
         model.addAttribute("device", device);
         return "device";
     }
 
     @GetMapping("/iplist/{mac}")
-    public String iplist(@PathVariable("mac") String mac, Model model) {
-        Device device = deviceRepository.findById(mac).get();
-        Map<String, String > ipname = iptablesLog.getList(device);
+    public String iplist(@PathVariable("mac") final String mac, final Model model) {
+        final Device device = this.deviceRepository.findById(mac).get();
+        final Map<String, String> ipname = this.iptablesLog.getList(device);
         model.addAttribute("device", device);
         model.addAttribute("iplist", ipname);
-        Map<String, String > blocklist = new HashMap<>();
-        for(String ip : iptables.getBlacklist()) {
+
+        final Map<String, String> blocklist = new HashMap<>();
+        for (final String ip : this.iptables.getBlacklist()) {
             try {
-                InetAddress address = InetAddress.getByName(ip);
+                final InetAddress address = InetAddress.getByName(ip);
                 blocklist.put(address.getHostAddress(), address.getCanonicalHostName());
-            } catch (UnknownHostException e) {
-                e.printStackTrace();
+            } catch (final UnknownHostException e) {
+                logger.error("Unknown Host Exception: {}", e.getMessage());
             }
         }
         model.addAttribute("blocklist", blocklist);
