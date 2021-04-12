@@ -6,7 +6,7 @@ hostname="${4}"
 if [ "$op" = "add" ]
 then
   # FIXME open with API
-  sudo sqlite3 /home/pi/Makefile/target/Makefile.db \
+  sudo sqlite3 /home/pi/spyke/core/target/spyke.db \
     "insert into device (ip,mac,name,status,quota,quota_unit,bandwidth,bandwidth_unit,period,period_unit) \
     values (\"${ip}\",\"${mac}\",\"${hostname}\",\"NEW\",0,\"kb\",0,\"kb\",0,\"m\");"
 fi

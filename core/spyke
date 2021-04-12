@@ -69,16 +69,17 @@ IPTABLES_LOG_CONF=/etc/rsyslog.d/iptables.conf
 DNS_LEASE=/var/lib/misc/dnsmasq.leases
 RC_LOCAL=/etc/rc.local
 
+require_superuser() {
+    if [[ $UID != 0 ]]; then
+        echo "Root privilege required."
+        echo "Please run this script with sudo."
+        exit 1
+    fi
+}
+
 check_dependencies() {
 
-    #hostapd
-    #dnsmasq
-    #openjdk-8-jdk
-    #maven
-    #libpcap-dev (pcap4j)
-    #sqlite3
-    #cron (already installed)
-    #iptables (already installed)
+    require_superuser
 
     hasMissingDependencies=false
     if ! ldconfig -p | grep libpcap &> /dev/null; then
@@ -154,8 +155,8 @@ check_dependencies() {
 
 spyke_configuration() {
 
-    #$CP $CONFIG/iptables.ipv4.conf $IPTABLES_CONF
-    #$CP $CONFIG/spyke.service $SERVICE
+    require_superuser
+
     $ECHO "[Unit]
 Description=spyke - A Network Monitor
 After=syslog.target
@@ -210,6 +211,8 @@ net.ipv4.ip_forward=1" > $SYSCTL_CONF
 
 install() {
 
+    require_superuser
+
     if [ "`$SYSTEMCTL is-active spyke`" == "active" ]; then
         $ECHO "spyke already is installed and running"
         exit 0
@@ -245,6 +248,8 @@ install() {
 
 uninstall() {
 
+    require_superuser
+
     if [ "`$SYSTEMCTL is-active spyke`" == "active" ]; then
         $SYSTEMCTL stop spyke
     fi
@@ -279,6 +284,8 @@ uninstall() {
 
 launch() {
 
+    require_superuser
+
     if [ "`$SYSTEMCTL is-active spyke`" != "active" ]; then
         $SYSTEMCTL start spyke
         $ECHO "spyke started"
@@ -306,6 +313,8 @@ launch() {
 
 terminate() {
 
+    require_superuser
+
     if [ "`$SYSTEMCTL is-active spyke`" == "active" ]; then
         $SYSTEMCTL stop spyke
         $ECHO "spyke stopped"
@@ -325,7 +334,7 @@ terminate() {
 }
 
 restart() {
-
+    require_superuser
     terminate
     sleep 3
     launch
@@ -333,7 +342,7 @@ restart() {
 }
 
 reinstall() {
-
+    require_superuser
     uninstall
     sleep 3
     install
@@ -350,7 +359,6 @@ status() {
 }
 
 check() {
-
     $ECHO ""
     $ECHO "Check system open ports:"
     $NETSTAT -antp
@@ -368,47 +376,40 @@ check() {
     $VCGENCMD measure_temp
 
     $ECHO ""
-
 }
 
 firewall(){
+
+    require_superuser
 
     $ECHO ""
     $ECHO "Iptables rules:"
     $IPTABLES -nvL
     $ECHO ""
-
 }
 
 howtouse() {
 
     $ECHO "Usage:
-    spyke [Options]
-Example:
+    spyke [options]
+example:
     spyke -h
-Options:
+options:
     -cd, check_dependencies check missing dependencies
-    -i, install     install spyke to system
-    -u, unisntall       remove spyke from system
-    -l, launch      start spyke
-    -t, terminate       Regex blacklist domains(s)
-    -r, restart     stop spyke and start it again after 3 second
-    -ui, reinstall     unsintall spyke and install it again after 3 second
-    -s, status      show logs
-    -c, check       show system: -current temperature; -open ports; -dns lease file; -spyke.db location;
-    -f, firewall    show firewall: iptables' rules
-    -h, help        show this message
-Note:
+    -i,  install            install spyke to the system
+    -u,  unisntall          remove spyke from the system
+    -l,  launch             start spyke
+    -t,  terminate          stop spyke
+    -r,  restart            stop spyke and start it again after 3 second
+    -ui, reinstall          uninstall spyke and install it again after 3 second
+    -s,  status             show logs
+    -c,  check              show hardware temperature; open ports, connected devices, database file location
+    -f,  firewall           show iptables rules
+    -h,  help               show usage
+note:
     You must have PERMISSION to run spyke or simply add SUDO at the beginning
     Any other option or input shows this message";
-
 }
-
-if [[ $UID != 0 ]]; then
-    echo "Root privilege required.
-Please run this script with sudo."
-    exit 1
-fi
 
 case "$1" in
 
