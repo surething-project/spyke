@@ -1,5 +1,6 @@
 package spyke.database.model;
 
+import com.google.common.base.Objects;
 import spyke.database.model.types.BUnit;
 import spyke.database.model.types.Status;
 import spyke.database.model.types.TUnit;
@@ -142,17 +143,20 @@ public class Device implements Serializable {
         if (this.ip == null || this.mac == null) {
             return -1;
         }
-        return (this.ip + this.mac).hashCode();
+        return Objects.hashCode(this.ip, this.mac);
     }
 
     @Override
-    public boolean equals(final Object obj) {
-        if (this == obj) {
+    public boolean equals(final Object other) {
+        if (this == other) {
             return true;
         }
-        final Device device = (Device) obj;
-        return this.mac != null ? this.mac.equals(device.getMac()) : device.getMac() != null
-                && this.ip != null ? this.ip.equals(device.getIp()) : device.getIp() == null;
+        if (other == null) {
+            return false;
+        }
+        final Device device = (Device) other;
+        return Objects.equal(this.mac, device.getMac())
+                && Objects.equal(this.ip, device.getIp());
     }
 
     @Override

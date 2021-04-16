@@ -7,7 +7,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import spyke.database.model.Device;
@@ -29,6 +28,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static org.springframework.web.bind.annotation.RequestMethod.GET;
+import static org.springframework.web.bind.annotation.RequestMethod.POST;
+import static org.springframework.web.bind.annotation.RequestMethod.PUT;
+import static org.springframework.web.bind.annotation.RequestMethod.DELETE;
+
 @RestController
 @RequestMapping("/device")
 public class DeviceControl {
@@ -45,76 +49,23 @@ public class DeviceControl {
     @Autowired
     private IptablesLog iptablesLog;
 
-    @RequestMapping(path = "/device", method = RequestMethod.POST)
+    /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+     *                                     G E T                                           *
+     * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+
+    @RequestMapping(path = "/device", method = POST)
     public ResponseEntity<Device> getDeviceById(@RequestParam("mac") final String mac) {
         final Device device = this.deviceRepository.findById(mac).get();
         return new ResponseEntity<Device>(device, HttpStatus.OK);
     }
 
-    @RequestMapping(path = "/devices", method = RequestMethod.POST)
+    @RequestMapping(path = "/devices", method = POST)
     public ResponseEntity<List<Device>> getDevices() {
         final List<Device> devices = this.deviceRepository.findAll();
         return new ResponseEntity<List<Device>>(devices, HttpStatus.OK);
     }
 
-    @RequestMapping(path = "/control/status", method = RequestMethod.POST)
-    public ResponseEntity<Boolean> changeStatus(@RequestParam("ip") final String ip,
-                                                @RequestParam("mac") final String mac,
-                                                @RequestParam("name") final String name,
-                                                @RequestParam("quota") final String quota,
-                                                @RequestParam("bandwidth") final String bandwidth,
-                                                @RequestParam("quotaUnit") final String quotaUnit,
-                                                @RequestParam("bandwidthUnit") final String bandwidthUnit,
-                                                @RequestParam("period") final String period,
-                                                @RequestParam("periodUnit") final String periodUnit,
-                                                @RequestParam("status") final String status) {
-        boolean changed = false;
-        if (quota.length() > 10 || bandwidth.length() > 10 || period.length() > 10) {
-            return new ResponseEntity<Boolean>(false, HttpStatus.OK);
-        }
-        if (this.deviceRepository.findById(mac).isPresent()) {
-            final Device device = this.deviceRepository.findById(mac).get();
-            if (status.equals("ALLOWED")) {
-                final Device newDevice = modifyDeviceIfDifferent(
-                        device,
-                        quota,
-                        quotaUnit,
-                        bandwidth,
-                        bandwidthUnit,
-                        period,
-                        periodUnit
-                );
-                if (OperatingSystem.isLinux()) {
-                    this.iptables.addRules(newDevice);
-                    device.setStatus(Status.valueOf(status));
-                    this.deviceRepository.saveAndFlush(device);
-                    logger.warn("{} -> allowed", device);
-                    return new ResponseEntity<Boolean>(true, HttpStatus.OK);
-                } else {
-                    logger.error("Invalid OS...");
-                }
-            } else if (status.equals("BLOCKED")) {
-                if (device.getStatus() == Status.ALLOWED) {
-                    this.scheduleConfig.cancelScheduler(device);
-                    if (OperatingSystem.isLinux()) {
-                        this.iptables.deleteRules(device);
-                        device.setStatus(Status.valueOf(status));
-                        this.deviceRepository.saveAndFlush(device);
-                        logger.warn("{} -> blocked", device);
-                        return new ResponseEntity<Boolean>(true, HttpStatus.OK);
-                    } else {
-                        logger.error("Invalid OS...");
-                    }
-                }
-            }
-            logger.error("Invalid status...");
-        } else {
-            logger.error("MAC ({}) not found", mac);
-        }
-        return new ResponseEntity<Boolean>(false, HttpStatus.OK);
-    }
-
-    @RequestMapping(path = "/control/period/{mac}/limited", method = RequestMethod.GET)
+    @RequestMapping(path = "/control/period/{mac}/limited", method = GET)
     public ResponseEntity<List<Period>> getPeriodsByMacWithLimit(@PathVariable("mac") final String mac) {
         List<Period> periods = new ArrayList<Period>();
         if (this.deviceRepository.findById(mac).isPresent()) {
@@ -161,7 +112,7 @@ public class DeviceControl {
         return new ResponseEntity<List<Period>>(periods, HttpStatus.OK);
     }
 
-    @RequestMapping(path = "/control/device/period/{mac}", method = RequestMethod.GET)
+    @RequestMapping(path = "/control/device/period/{mac}", method = GET)
     public ResponseEntity<String> getDevicePeriod(@PathVariable("mac") final String mac) {
         String period = "not found";
         if (this.deviceRepository.findById(mac).isPresent()) {
@@ -172,38 +123,14 @@ public class DeviceControl {
         return new ResponseEntity<String>(period, HttpStatus.NOT_FOUND);
     }
 
-    // add device
-    @RequestMapping(path = "/control/device/add", method = RequestMethod.POST)
-    public ResponseEntity<Boolean> addDevice(@RequestParam("ip") final String ip,
-                                             @RequestParam("mac") final String mac,
-                                             @RequestParam("name") final String name) {
-        final Device device = new Device(ip, mac, name, Status.NEW, 0, 0, 0, BUnit.kb, BUnit.kb, TUnit.m);
-        this.deviceRepository.saveAndFlush(device);
-        return new ResponseEntity<Boolean>(true, HttpStatus.OK);
-    }
-
-    // block ip or mac
-    @RequestMapping(path = "/control/ip/block", method = RequestMethod.POST)
-    public ResponseEntity<Boolean> getBlock(@RequestParam("block") final String block) {
-        // TODO input validation
-        return new ResponseEntity<Boolean>(this.iptables.block(block), HttpStatus.OK);
-    }
-
-    // unblock ip or mac
-    @RequestMapping(path = "/control/ip/unblock", method = RequestMethod.POST)
-    public ResponseEntity<Boolean> getUnblock(@RequestParam("unblockip") final String unblockip) {
-        // TODO input validation
-        return new ResponseEntity<Boolean>(this.iptables.unblock(unblockip), HttpStatus.OK);
-    }
-
     // get list of blocked ip or mac
-    @RequestMapping(path = "/control/ip/blacklist", method = RequestMethod.GET)
+    @RequestMapping(path = "/control/ip/blacklist", method = GET)
     public ResponseEntity<List<String>> getIpBlackList() {
         return new ResponseEntity<List<String>>(this.iptables.getBlacklist(), HttpStatus.OK);
     }
 
     // get list of outgoing ip
-    @RequestMapping(path = "/control/ip/list/{mac}", method = RequestMethod.GET)
+    @RequestMapping(path = "/control/ip/list/{mac}", method = GET)
     public ResponseEntity<Map<String, String>> getIpList(@PathVariable("mac") final String mac) {
         if (this.deviceRepository.findById(mac).isPresent()) {
             final Device device = this.deviceRepository.findById(mac).get();
@@ -212,56 +139,46 @@ public class DeviceControl {
         return new ResponseEntity<Map<String, String>>(new HashMap<String, String>(), HttpStatus.OK);
     }
 
-    // test: renew device's rules
-    @RequestMapping(path = "/control/rule/renew/{mac}", method = RequestMethod.GET)
-    public ResponseEntity<Boolean> renewRule(@PathVariable("mac") final String mac) {
-        if (this.deviceRepository.findById(mac).isPresent()) {
-            final Device device = this.deviceRepository.findById(mac).get();
-            this.iptables.renewRules(device);
-        }
-        return new ResponseEntity<Boolean>(true, HttpStatus.OK);
-    }
-
     // test: get all periods
-    @RequestMapping(path = "/control/period/list", method = RequestMethod.GET)
+    @RequestMapping(path = "/control/period/list", method = GET)
     public ResponseEntity<List<Period>> getPeriods() {
         final List<Period> periods = this.periodRepository.findAll();
         return new ResponseEntity<List<Period>>(periods, HttpStatus.OK);
     }
 
     // test: get device's all periods
-    @RequestMapping(path = "/control/period/{mac}/list", method = RequestMethod.GET)
+    @RequestMapping(path = "/control/period/{mac}/list", method = GET)
     public ResponseEntity<List<Period>> getPeriodsByMac(@PathVariable("mac") final String mac) {
         final List<Period> periods = this.periodRepository.findAllByMac(mac);
         return new ResponseEntity<List<Period>>(periods, HttpStatus.OK);
     }
 
     // test: get device's periods from 'time' hours ago before  note: not working with param 0 since period is not saved yet
-    @RequestMapping(path = "/control/period/{mac}/before/{time}", method = RequestMethod.GET)
+    @RequestMapping(path = "/control/period/{mac}/before/{time}", method = GET)
     public ResponseEntity<List<Period>> getPeriodByMacAndStartBefore(@PathVariable("mac") final String mac,
                                                                      @PathVariable("time") final String paramtime) {
-        final List<Period> periods = this.periodRepository.findAllByTimeStartBefore(mac, getDate(paramtime));
+        final List<Period> periods = this.periodRepository.findAllByTimeStartBefore(mac, getDateFromGivenHourAge(paramtime));
         return new ResponseEntity<List<Period>>(periods, HttpStatus.OK);
     }
 
     // test: get device's periods from 'time' hours ago after   note: not working with param 0 since period is not saved yet
-    @RequestMapping(path = "/control/period/{mac}/after/{time}", method = RequestMethod.GET)
+    @RequestMapping(path = "/control/period/{mac}/after/{time}", method = GET)
     public ResponseEntity<List<Period>> getPeriodByMacAndStartAfter(@PathVariable("mac") final String mac,
                                                                     @PathVariable("time") final String paramtime) {
-        final List<Period> periods = this.periodRepository.findAllByTimeStartAfter(mac, getDate(paramtime));
+        final List<Period> periods = this.periodRepository.findAllByTimeStartAfter(mac, getDateFromGivenHourAge(paramtime));
         return new ResponseEntity<List<Period>>(periods, HttpStatus.OK);
     }
 
     // test: get device's period from 'time' hours ago  note: not working with param 0 since period is not saved yet
-    @RequestMapping(path = "/control/period/{mac}/time/{time}", method = RequestMethod.GET)
+    @RequestMapping(path = "/control/period/{mac}/time/{time}", method = GET)
     public ResponseEntity<List<Period>> getPeriodByMacAndTime(@PathVariable("mac") final String mac,
                                                               @PathVariable("time") final String paramtime) {
-        final List<Period> periods = this.periodRepository.findAllByTime(mac, getDate(paramtime));
+        final List<Period> periods = this.periodRepository.findAllByTime(mac, getDateFromGivenHourAge(paramtime));
         return new ResponseEntity<List<Period>>(periods, HttpStatus.OK);
     }
 
     // test: is device's schedule cancelled?
-    @RequestMapping(path = "/control/schedule/{mac}/cancelled", method = RequestMethod.GET)
+    @RequestMapping(path = "/control/schedule/{mac}/cancelled", method = GET)
     public ResponseEntity<Boolean> getSchedulerIsCancelled(@PathVariable("mac") final String mac) {
         Device device = null;
         if (this.deviceRepository.findById(mac).isPresent()) {
@@ -271,7 +188,7 @@ public class DeviceControl {
     }
 
     // test: does device's schedule exist?
-    @RequestMapping(path = "/control/schedule/{mac}/exists", method = RequestMethod.GET)
+    @RequestMapping(path = "/control/schedule/{mac}/exists", method = GET)
     public ResponseEntity<Boolean> getSchedulerIsCancel(@PathVariable("mac") final String mac) {
         Device device = null;
         if (this.deviceRepository.findById(mac).isPresent()) {
@@ -281,7 +198,7 @@ public class DeviceControl {
     }
 
     // test: get device passed and dropped values
-    @RequestMapping(path = "/control/schedule/{mac}/bytes", method = RequestMethod.GET)
+    @RequestMapping(path = "/control/schedule/{mac}/bytes", method = GET)
     public ResponseEntity<List<Long>> getBytesTest(@PathVariable("mac") final String mac) {
         Device device = null;
         if (this.deviceRepository.findById(mac).isPresent()) {
@@ -294,51 +211,144 @@ public class DeviceControl {
         return new ResponseEntity<List<Long>>(bytes, HttpStatus.OK);
     }
 
+    /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+     *                                    P O S T                                          *
+     * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-    // perhaps, this function should not be here
-    private Device modifyDeviceIfDifferent(final Device device,
-                                           final String quota,
-                                           final String quotaUnit,
-                                           final String bandwidth,
-                                           final String bandwidthUnit,
-                                           final String period,
-                                           final String periodUnit) {
+    // add device
+    @RequestMapping(path = "/control/device/add", method = POST)
+    public ResponseEntity<Boolean> addDevice(@RequestParam("ip") final String ip,
+                                             @RequestParam("mac") final String mac,
+                                             @RequestParam("name") final String name) {
+        final Device device = new Device(ip, mac, name, Status.NEW, 0, 0, 0, BUnit.kb, BUnit.kb, TUnit.m);
+        this.deviceRepository.saveAndFlush(device);
+        return new ResponseEntity<Boolean>(true, HttpStatus.OK);
+    }
+
+    // block ip or mac
+    @RequestMapping(path = "/control/ip/block", method = POST)
+    public ResponseEntity<Boolean> getBlock(@RequestParam("block") final String block) {
+        // TODO input validation
+        return new ResponseEntity<Boolean>(this.iptables.block(block), HttpStatus.OK);
+    }
+
+    // unblock ip or mac
+    @RequestMapping(path = "/control/ip/unblock", method = POST)
+    public ResponseEntity<Boolean> getUnblock(@RequestParam("unblockip") final String unblockip) {
+        // TODO input validation
+        return new ResponseEntity<Boolean>(this.iptables.unblock(unblockip), HttpStatus.OK);
+    }
+
+    /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+     *                                     P U T                                           *
+     * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+
+    @RequestMapping(path = "/control/status", method = POST)
+    public ResponseEntity<Boolean> changeStatus(@RequestParam("ip") final String ip,
+                                                @RequestParam("mac") final String mac,
+                                                @RequestParam("name") final String name,
+                                                @RequestParam("quota") final String quota,
+                                                @RequestParam("bandwidth") final String bandwidth,
+                                                @RequestParam("quotaUnit") final String quotaUnit,
+                                                @RequestParam("bandwidthUnit") final String bandwidthUnit,
+                                                @RequestParam("period") final String period,
+                                                @RequestParam("periodUnit") final String periodUnit,
+                                                @RequestParam("status") final String status) {
+        boolean changed = false;
+        if (quota.length() > 10 || bandwidth.length() > 10 || period.length() > 10) {
+            return new ResponseEntity<Boolean>(false, HttpStatus.OK);
+        }
+        if (this.deviceRepository.findById(mac).isPresent()) {
+            final Device device = this.deviceRepository.findById(mac).get();
+            if (status.equals("ALLOWED")) {
+                if (OperatingSystem.isLinux()) {
+                    device.setStatus(Status.valueOf(status));
+                    allowDevice(device, quota, quotaUnit, bandwidth, bandwidthUnit, period, periodUnit);
+                    return new ResponseEntity<Boolean>(true, HttpStatus.OK);
+                } else {
+                    logger.error("Invalid OS...");
+                }
+            } else if (status.equals("BLOCKED")) {
+                if (device.getStatus() == Status.ALLOWED) {
+                    if (OperatingSystem.isLinux()) {
+                        this.scheduleConfig.cancelScheduler(device);
+                        this.iptables.deleteRules(device);
+                        device.setStatus(Status.valueOf(status));
+                        this.deviceRepository.saveAndFlush(device);
+                        logger.warn("{} -> blocked", device);
+                        return new ResponseEntity<Boolean>(true, HttpStatus.OK);
+                    } else {
+                        logger.error("Invalid OS...");
+                    }
+                }
+            }
+            logger.error("Invalid status...");
+        } else {
+            logger.error("MAC ({}) not found", mac);
+        }
+        return new ResponseEntity<Boolean>(false, HttpStatus.OK);
+    }
+
+    // test: renew device's rules
+    @RequestMapping(path = "/control/rule/renew/{mac}", method = GET)
+    public ResponseEntity<Boolean> renewRule(@PathVariable("mac") final String mac) {
+        if (this.deviceRepository.findById(mac).isPresent()) {
+            final Device device = this.deviceRepository.findById(mac).get();
+            this.iptables.renewRules(device);
+        }
+        return new ResponseEntity<Boolean>(true, HttpStatus.OK);
+    }
+
+    /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+     *                                   D E L E T E                                       *
+     * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+
+    /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+     *                                   O T H E R S                                       *
+     * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+
+    private void allowDevice(final Device device,
+                             final String quota,
+                             final String quotaUnit,
+                             final String bandwidth,
+                             final String bandwidthUnit,
+                             final String period,
+                             final String periodUnit) {
         // update quota
-        if ((quota != null && quotaUnit != null && !quota.equals("") && !quotaUnit.equals("") &&
-                (device.getQuota() != Long.parseLong(quota, 10) || !device.getQuotaBUnit().equals(quotaUnit)))
-        ) {
-            // SECURITY PROBLEM: input validation
+        if (quota != null && quotaUnit != null && !quota.equals("") && !quotaUnit.equals("")) {
             device.setQuota(Long.parseLong(quota, 10));
             device.setQuotaBUnit(BUnit.valueOf(quotaUnit));
         }
         // update bandwidth
-        if ((bandwidth != null && bandwidthUnit != null && !bandwidth.equals("") && !bandwidthUnit.equals("") &&
-                (device.getBandwidth() != Long.parseLong(bandwidth, 10) || !device.getBandwidthBUnit().equals(
-                        bandwidthUnit)))) {
-            // SECURITY PROBLEM: input validation
+        if ((bandwidth != null && bandwidthUnit != null && !bandwidth.equals("") && !bandwidthUnit.equals(""))) {
             device.setBandwidth(Long.parseLong(bandwidth, 10));
             device.setBandwidthBUnit(BUnit.valueOf(bandwidthUnit));
         }
         // update period
-        if (period != null && periodUnit != null && !period.equals("") && !periodUnit.equals("") &&
-                (device.getPeriod() != Long.parseLong(period, 10) || !device.getPeriodUnit().equals(periodUnit))
-        ) {
+        if (period != null && periodUnit != null && !period.equals("") && !periodUnit.equals("")) {
+
             // remove existing periods of a Device
             if (this.periodRepository.findAllByMac(device.getMac()).size() != 0)
                 this.periodRepository.deleteByAllMac(device.getMac());
 
-            // SECURITY PROBLEM: input validation
             device.setPeriod(Long.parseLong(period, 10));
             device.setPeriodUnit(TUnit.valueOf(periodUnit));
             this.scheduleConfig.setScheduler(device);
         }
-        return device;
+        this.iptables.addRules(device);
+        this.deviceRepository.saveAndFlush(device);
+        logger.warn("{} -> allowed", device);
     }
 
-    private Date getDate(final String time) {
+    /**
+     * Gets {@link Date} of given hours ago.
+     *
+     * @param hour The past hour.
+     * @return The {@link Date} of given {@code hour} ago.
+     */
+    private Date getDateFromGivenHourAge(final String hour) {
         final long HOUR_IN_MS = 60 * 60 * 1000;
-        final long hour = Long.valueOf(time);
-        return new Date(System.currentTimeMillis() - (hour * HOUR_IN_MS));
+        return new Date(System.currentTimeMillis() - (Long.parseLong(hour) * HOUR_IN_MS));
     }
 
 }
