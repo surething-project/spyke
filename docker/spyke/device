@@ -5,7 +5,10 @@ ip="${3:-ip}"
 hostname="${4}"
 if [ "$op" = "add" ]
 then
-  sqlite3 /etc/spyke/spyke.db \
-    "insert into device (ip,mac,name,status,quota,quota_unit,bandwidth,bandwidth_unit,period,period_unit) \
-    values (\"${ip}\",\"${mac}\",\"${hostname}\",\"NEW\",0,\"kb\",0,\"kb\",0,\"m\");"
+  curl -X POST -H "Content-Type: application/json" \
+    -d '{"ip": "${ip}", "mac": "${mac}", "name": "${hostname}"}' \
+    http://localhost/control/device/add
+#  sqlite3 /etc/spyke/spyke.db \
+#    "insert into device (ip,mac,name,status,quota,quota_unit,bandwidth,bandwidth_unit,period,period_unit) \
+#    values (\"${ip}\",\"${mac}\",\"${hostname}\",\"NEW\",0,\"kb\",0,\"kb\",0,\"m\");"
 fi

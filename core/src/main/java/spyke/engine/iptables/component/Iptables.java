@@ -1,9 +1,11 @@
 package spyke.engine.iptables.component;
 
+import com.google.common.base.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import spyke.database.model.Device;
+import spyke.engine.iptables.model.CompoundRules;
 import spyke.engine.iptables.model.Rule;
 import spyke.engine.iptables.model.types.Filter;
 
@@ -13,10 +15,13 @@ import java.io.InputStreamReader;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Component("iptables")
 public class Iptables {
@@ -24,18 +29,18 @@ public class Iptables {
     /**
      * The logger
      */
-    private final Logger logger = LoggerFactory.getLogger(Iptables.class);
+    private static final Logger logger = LoggerFactory.getLogger(Iptables.class);
 
     /**
      * The map with key as {@code device} and value as map of rule number with corresponding {@code rule}. FIXME
      * refactor map to an object
      */
-    private final Map<Device, Map<Integer, Rule>> deviceRules = new ConcurrentHashMap<>();
+    private final Map<Device, CompoundRules> deviceRules = new ConcurrentHashMap<>();
 
     /**
      * The list of blacklist.
      */
-    private final List<Rule> blacklist = new ArrayList<>();
+    private final Collection<Rule> blacklist = new HashSet<>();
 
     /**
      * Gets the list of blacked devices.
@@ -44,7 +49,7 @@ public class Iptables {
      */
     public List<String> getBlacklist() {
         return this.blacklist.stream()
-                .map(Rule::getDestination)
+                .flatMap(rule -> rule.getDestination().isPresent() ? Stream.of(rule.getDestination().get()) : Stream.empty())
                 .collect(Collectors.toList());
     }
 
@@ -58,10 +63,10 @@ public class Iptables {
         final File iptablesConf = new File("script/config/iptables.ipv4.conf");
         if (isAdmin() && iptablesConf.exists() &&
                 execute("sudo /sbin/iptables-restore < " + iptablesConf.getAbsolutePath())) {
-            this.logger.info("Iptables is restored with spyke default rules.");
+            logger.info("Iptables is restored with spyke default rules.");
             return true;
         }
-        this.logger.error("Iptables failed to restore with spyke default rules.");
+        logger.error("Iptables failed to restore with spyke default rules.");
         return false;
     }
 
@@ -75,21 +80,19 @@ public class Iptables {
         if (domain != null && !domain.equals("")) {
             try {
                 final InetAddress address = InetAddress.getByName(domain);
-                final Rule rule = new Rule();
-                rule.setDestination(address.getHostAddress());
-                rule.setFilter(Filter.DROP);
+                final Rule rule = Rule.builder().destination(address.getHostAddress()).filter(Filter.DROP).build();
                 //logger.info(address.getHostAddress());
                 //logger.info(address.getCanonicalHostName());
                 if (!this.blacklist.contains(rule) && execute("sudo /sbin/iptables -t mangle -A POSTROUTING " + rule.toString())) {
                     this.blacklist.add(rule);
-                    this.logger.info(domain + " blocked!");
+                    logger.info(domain + " blocked!");
                     return true;
                 }
             } catch (final UnknownHostException e) {
-                this.logger.error(e.getMessage());
+                logger.error(e.getMessage());
             }
         }
-        this.logger.debug("Blocking domain {} failed", domain);
+        logger.debug("Blocking domain {} failed", domain);
         return false;
     }
 
@@ -102,17 +105,15 @@ public class Iptables {
     public boolean unblock(final String domain) {
         if (domain != null && !domain.equals("")) {
             if (this.blacklist.size() != 0) {
-                final Rule rule = new Rule();
-                rule.setDestination(domain);
-                rule.setFilter(Filter.DROP);
+                final Rule rule = Rule.builder().destination(domain).filter(Filter.DROP).build();
                 if (this.blacklist.contains(rule) && execute("sudo /sbin/iptables -t mangle -D POSTROUTING " + rule.toString())) {
                     this.blacklist.remove(rule);
-                    this.logger.info(domain + " unblocked!");
+                    logger.info(domain + " unblocked!");
                     return true;
                 }
             }
         }
-        this.logger.debug("Unblocking domain {} failed", domain);
+        logger.debug("Unblocking domain {} failed", domain);
         return false;
     }
 
@@ -124,23 +125,12 @@ public class Iptables {
      * @param device The device.
      */
     public void renewRules(final Device device) {
-        /*
-        example: -A for append and -I for insert
-            sudo iptables -N 192.168.8.95   # create chain
-            sudo iptables -A FORWARD -j 192.168.8.95
-            sudo iptables -A 192.168.8.95 -s 192.168.8.95/32 -m quota --quota 1024 -m limit --limit 1/s -j ACCEPT	# 1 packet has 1500bytes usually
-            sudo iptables -A 192.168.8.95 -s 192.168.8.95/32 -j DROP
-        note:
-            1st = forward in accept
-            2nd = forward out accept
-            3rd = forward in drop
-            4th = forward out drop
-         */
+
         int i = 0;
-        for (final Rule rule : this.deviceRules.get(device).values()) {
+        for (final Rule rule : this.deviceRules.get(device).getRules()) {
             i++;
             if (execute("sudo /sbin/iptables -R " + device.getIp() + " " + (i) + " " + rule.toString())) {
-                this.logger.warn("Added rule: {}", rule);
+                logger.warn("Added rule: {}", rule);
             }
         }
     }
@@ -152,12 +142,13 @@ public class Iptables {
      */
     public void deleteRules(final Device device) {
         // sudo iptables -D 192.168.8.95 -s 192.168.8.95/32 -j ACCEPT  # delete first appeared
-        for (final Rule rule : this.deviceRules.get(device).values()) {
+        final CompoundRules compoundRules = this.deviceRules.get(device);
+        for (final Rule rule : compoundRules.getRules()) {
             if (execute("sudo /sbin/iptables -D " + device.getIp() + " " + rule.toString())) {
-                this.logger.warn("Deelted rule: {}", rule);
+                logger.warn("Deleted rule: {}", rule);
             }
         }
-        this.deviceRules.put(device, new ConcurrentHashMap<Integer, Rule>());
+        this.deviceRules.put(device, CompoundRules.builder().defaultDrop(device.getIp()).build());
     }
 
     /**
@@ -178,17 +169,15 @@ public class Iptables {
             Hashlimit can be used with <b, kb, mb, gb> unit and s as time unit
         */
         if (this.deviceRules.containsKey(device)) {
-            if (!this.deviceRules.get(device).isEmpty()) {
-                final Map<Integer, Rule> rules = getRules(device);
-                replaceRule(device, rules);
+            if (!this.deviceRules.get(device).getRules().isEmpty()) {
+                replaceRule(device, getCompoundRules(device));
             } else {
-                final Map<Integer, Rule> rules = getRules(device);
-                insertToList(device, rules);
+                insertToList(device, getCompoundRules(device));
             }
         } else if (!this.deviceRules.containsKey(device) && newDevice(device)) {
             // -I FORWARD 1 = insert at the first
             if (execute("sudo /sbin/iptables -I FORWARD -j " + device.getIp())) {
-                this.logger.info("Chain [{}] created!", device.getIp());
+                logger.info("Chain [{}] created!", device.getIp());
             }
             /* INPUT & OUTPUT ACCEPT is no longer necessary
             Rule input = getRule(device.getIp(), Filter.ACCEPT, true);
@@ -201,8 +190,7 @@ public class Iptables {
                 deviceRules.get(device).add(output);
             }
              */
-            final Map<Integer, Rule> rules = getRules(device);
-            insertToList(device, rules);
+            insertToList(device, getCompoundRules(device));
         }
     }
 
@@ -226,13 +214,13 @@ public class Iptables {
 
             final BufferedReader errorReader = new BufferedReader(new InputStreamReader(process.getErrorStream()));
             while ((line = errorReader.readLine()) != null) {
-                this.logger.error("Read iptables failed: " + line);
+                logger.error("Read iptables failed: " + line);
             }
             process.waitFor();
             inputReader.close();
             errorReader.close();
         } catch (final Exception e) {
-            this.logger.error("Process get bytes from iptables failed: " + e.getMessage());
+            logger.error("Process get bytes from iptables failed: " + e.getMessage());
         }
         return convertUploadLinesToBytes(lines, device.getIp());
     }
@@ -243,10 +231,11 @@ public class Iptables {
      * @param device The device.
      * @param rules  The map with key as rules index and value with corresponding rule.
      */
-    private void insertToList(final Device device, final Map<Integer, Rule> rules) {
+    private void insertToList(final Device device, final CompoundRules rules) {
         boolean success = true;
-        for (final Map.Entry<Integer, Rule> entry : rules.entrySet()) {
-            if (!execute("sudo /sbin/iptables -A " + device.getIp() + " " + entry.getValue().toString())) {
+        for (final Rule rule : rules.getRules()) {
+            if (!execute("sudo /sbin/iptables -A " + device.getIp() + " " + rule)) {
+                logger.error("Failed appending Rule {}", rule);
                 success = false;
             }
         }
@@ -261,37 +250,31 @@ public class Iptables {
      * @param device The device.
      * @param rules  The map with key as rules index and value with corresponding rule.
      */
-    private void replaceRule(final Device device, final Map<Integer, Rule> rules) {
+    private void replaceRule(final Device device, final CompoundRules rules) {
 
-        /*
-            1-incoming
-            2-outgoing with bw
-            3-outgoing with qt
-            4-outgoing unlimited
-            5-outgoing drop
-            6-incoming drop
+        final boolean success;
 
-        Note: the combination for 2 3 and 4 rules can be:
-            1, 2, 3, 5, 6.
-            1, 2, 5, 6.
-            1, 3, 5, 6.
-            1, 4, 5, 6.
-            Therefore, there can be only 4 or 5 rules for each device. Assuming we are not planning to block incoming data.
-         */
-
-        boolean success = true;
-
-        if (this.deviceRules.get(device).size() == rules.size()) {
+        final int deviceRulesSize = this.deviceRules.get(device).getRules().size();
+        final int rulesSize = rules.getRules().size();
+        if (deviceRulesSize == rulesSize) {
             success = repRules(device, rules);
         } else {
-            if (this.deviceRules.get(device).size() > rules.size()) {
-                if (!execute("sudo /sbin/iptables -D " + device.getIp() + " " + this.deviceRules.get(device).get(2).toString())) {
+            if (deviceRulesSize > rulesSize) {
+                // If device has one more rule, it means that optional (4) outgoing bandwidth was being used, and new rule doesn't
+                // note we are not considering incoming bandwidth yet
+                final Optional<Rule> fourth = this.deviceRules.get(device).getFourth();
+                if (fourth.isPresent() && !execute("sudo /sbin/iptables -D " + device.getIp() + " " + fourth.get())) {
+                    logger.error("Failed inserting Rule {}", fourth.get());
                     return;
                 }
                 success = repRules(device, rules);
             } else {
                 success = repRules(device, rules);
-                if (!execute("sudo /sbin/iptables -I " + device.getIp() + " " + this.deviceRules.get(device).get(5).toString())) {
+                // If device has one less rule, it means that optional (4) outgoing bandwidth was not being used, and new rule does
+                // note we are not considering incoming bandwidth yet, so we need to append the last rule
+                final Rule eighth = this.deviceRules.get(device).getEighth();
+                if (!execute("sudo /sbin/iptables -I " + device.getIp() + " " + eighth)) {
+                    logger.error("Failed inserting Rule {}", eighth);
                     return;
                 }
             }
@@ -301,74 +284,59 @@ public class Iptables {
         }
     }
 
-    private boolean repRules(final Device device, final Map<Integer, Rule> rules) {
+    private boolean repRules(final Device device, final CompoundRules rules) {
         int i = 0;
         boolean success = true;
-        for (final Rule entry : rules.values()) {
+        for (final Rule rule : rules.getRules()) {
             i++;
-            if (!execute("sudo /sbin/iptables -R " + device.getIp() + " " + i + " " + entry.toString())) {
+            if (!execute("sudo /sbin/iptables -R " + device.getIp() + " " + i + " " + rule)) {
+                logger.error("Failed replacing Rule {}", rule);
                 success = false;
             }
         }
         return success;
     }
 
-    private Map<Integer, Rule> getRules(final Device device) {
+    private CompoundRules getCompoundRules(final Device device) {
 
-        /*
-            1-incoming
-            2-outgoing with bw
-            3-outgoing with qt
-            4-outgoing unlimited
-            5-outgoing drop
-            6-incoming drop
+        final CompoundRules.Builder compoundRules = CompoundRules.builder().defaultDrop(device.getIp());
 
-        Note: the combination for 2 3 and 4 rules can be:
-            1, 2, 3, 5, 6.
-            1, 2, 5, 6.
-            1, 3, 5, 6.
-            1, 4, 5, 6.
-            Therefore, there can be only 4 or 5 rules for each device. Assuming we are not planning to block incoming data.
-         */
-
-        final Map<Integer, Rule> rules = new ConcurrentHashMap<>();
-        rules.put(5, getRule(device.getIp(), Filter.DROP, true));
-        rules.put(6, getRule(device.getIp(), Filter.DROP, false));
-
-        String quota = null;
-        String hashlimit = null;
         if (device.getBandwidth() != 0) {
-            hashlimit = device.getBandwidth() + String.valueOf(device.getBandwidthBUnit()) + "/s";
-            rules.put(2, getHashlimitRule(device.getIp(), Filter.DROP, true, hashlimit));
-        }
-        if (device.getQuota() != 0) {
-            switch (device.getQuotaBUnit()) {
-                case kb:
-                    quota = String.valueOf(device.getQuota() * 1024);
-                    break;
-                case mb:
-                    quota = String.valueOf(device.getQuota() * 1024 * 1024);
-                    break;
-                case gb:
-                    quota = String.valueOf(device.getQuota() * 1024 * 1024 * 1024);
-                    break;
-                default:
-                    quota = String.valueOf(device.getQuota());
-            }
-            rules.put(3, getQuotaRule(device.getIp(), Filter.ACCEPT, true, quota));
-        }
-        if (quota == null) {
-            rules.put(4, getRule(device.getIp(), Filter.ACCEPT, true));
+            final String hashLimit = device.getBandwidth() + String.valueOf(device.getBandwidthBUnit()) + "/s";
+            final Rule bandwidthRule = Rule.builder()
+                    .source(device.getIp())
+                    .filter(Filter.DROP)
+                    .hashlimit(hashLimit)
+                    .hashlimitName("s" + device.getIp()) /* s for source and d for destination */
+                    .build();
+            // 4 - outgoing bandwidth
+            compoundRules.fifth(bandwidthRule);
         }
 
-        // for download, it is not limited yet
-        rules.put(1, getRule(device.getIp(), Filter.ACCEPT, false));
-        return rules;
+        if (device.getQuota() != 0) {
+            final Rule acceptLimitedRule = Rule.builder()
+                    .source(device.getIp())
+                    .filter(Filter.ACCEPT)
+                    .quota(convertToUnit(device))
+                    .build();
+            // 5 - outgoing quota
+            compoundRules.sixth(acceptLimitedRule);
+        } else {
+            final Rule acceptSourceRule = Rule.builder().source(device.getIp()).filter(Filter.ACCEPT).build();
+            // 6 - outgoing unlimited
+            compoundRules.sixth(acceptSourceRule);
+        }
+
+        // TODO: incoming is unlimited
+        final Rule acceptSourceRule = Rule.builder().destination(device.getIp()).filter(Filter.ACCEPT).build();
+        // incoming unlimited
+        compoundRules.third(acceptSourceRule);
+        return compoundRules.build();
     }
 
     private boolean newDevice(final Device device) {
         if (execute("sudo /sbin/iptables -N " + device.getIp())) {
-            this.deviceRules.put(device, new ConcurrentHashMap<Integer, Rule>());
+            this.deviceRules.put(device, CompoundRules.builder().defaultDrop(device.getIp()).build());
             return true;
         }
         return false;
@@ -390,13 +358,13 @@ public class Iptables {
             if (!uploadLine[1].contains(deviceIp)) {
                 if (uploadLine[0].contains("ACCEPT")) {
                     // the 2nd ACCEPT is read
-                    bytes[0] = convertExtractBytes(uploadLine[0].split("ACCEPT")[0].replaceAll(
+                    bytes[0] = convertToBytes(uploadLine[0].split("ACCEPT")[0].replaceAll(
                             "(^\\s+|\\s+$)",
                             ""
                     ).split("\\s+")[1]);
                 } else if (uploadLine[0].contains("DROP")) {
                     // there are two upload drop, one for the bandwidth another for normal. In this case, the normal will replace the bw drop.
-                    bytes[1] = convertExtractBytes(uploadLine[0].split("DROP")[0].replaceAll("(^\\s+|\\s+$)", "").split(
+                    bytes[1] = convertToBytes(uploadLine[0].split("DROP")[0].replaceAll("(^\\s+|\\s+$)", "").split(
                             "\\s+")[1]);
                 }
             }
@@ -404,7 +372,7 @@ public class Iptables {
         return bytes;
     }
 
-    private long convertExtractBytes(String bytes_value) {
+    private long convertToBytes(String bytes_value) {
         final long bytes;
         switch (bytes_value.charAt(bytes_value.length() - 1)) {
             case 'K':
@@ -445,44 +413,23 @@ public class Iptables {
         return str.substring(0, str.length() - 1);
     }
 
-    /*
-        get rules by parameters
+    /**
+     * Gets the value of bytes converted.
+     *
+     * @param device The expected device.
+     * @return The bytes for quota.
      */
-    private Rule getRule(final String ip, final Filter filter, final boolean source) {
-        final Rule rule = new Rule();
-        if (source) {
-            rule.setSource(ip);
-        } else {
-            rule.setDestination(ip);
+    private String convertToUnit(final Device device) {
+        switch (device.getQuotaBUnit()) {
+            case kb:
+                return String.valueOf(device.getQuota() * 1024);
+            case mb:
+                return String.valueOf(device.getQuota() * 1024 * 1024);
+            case gb:
+                return String.valueOf(device.getQuota() * 1024 * 1024 * 1024);
+            default:
+                return String.valueOf(device.getQuota());
         }
-        /* ConnLimit limit the established connection, not new connection.
-        if(filter.equals(Filter.ACCEPT))
-            rule.setLimit("10"); // 10 packet per minute with 5 limit-burst as default
-        */
-        rule.setFilter(filter);
-        return rule;
-    }
-
-    private Rule getQuotaRule(final String ip, final Filter filter, final boolean source, final String quota) {
-        final Rule rule = getRule(ip, filter, source);
-        if (quota != null)
-            rule.setQuota(quota);
-        return rule;
-    }
-
-    private Rule getHashlimitRule(final String ip, final Filter filter, final boolean source, final String hashlimit) {
-        final Rule rule = getRule(ip, filter, source);
-        if (hashlimit != null) {
-            String hashlimit_name;
-            if (source)
-                hashlimit_name = "s";
-            else
-                hashlimit_name = "d";
-            hashlimit_name += ip;
-            rule.setHashlimitName(hashlimit_name);
-            rule.setHashlimit(hashlimit);
-        }
-        return rule;
     }
 
     /**
@@ -497,9 +444,9 @@ public class Iptables {
                 final Process p = Runtime.getRuntime().exec(task);
                 p.waitFor();
             }
-            this.logger.info("Task success: {} ", task);
+            logger.info("Task success: {} ", task);
         } catch (final Exception e) {
-            this.logger.error("Task fail: {}", task);
+            logger.error("Task fail: {}", task);
             return false;
         }
         return true;
@@ -519,14 +466,14 @@ public class Iptables {
             }
             try (final BufferedReader buffer = new BufferedReader(new InputStreamReader(p.getInputStream()))) {
                 if (buffer.readLine().equals("0")) {
-                    this.logger.warn("The user has admin privilege");
+                    logger.warn("The user has admin privilege");
                     return true;
                 }
             }
         } catch (final Exception e) {
-            this.logger.error("Checking is admin failed: {}", e.getMessage());
+            logger.error("Checking is admin failed: {}", e.getMessage());
         }
-        this.logger.warn("The user has NOT admin privilege");
+        logger.warn("The user has NOT admin privilege");
         return false;
     }
 }

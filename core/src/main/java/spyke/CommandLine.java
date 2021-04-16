@@ -28,6 +28,11 @@ public class CommandLine implements CommandLineRunner {
     @Autowired
     private TaskExecutor taskExecutor;
     /**
+     * The automatic dependency injection pcap4j tasks.
+     */
+    @Autowired
+    private TaskExecutor pcap4jExecutor;
+    /**
      * The automatic dependency injection for scheduler tasks.
      */
     @Autowired
@@ -60,7 +65,7 @@ public class CommandLine implements CommandLineRunner {
         this.taskExecutor.execute(deviceSender);
 
         final PacketHandler packetHandler = this.applicationContext.getBean(PacketHandler.class);
-        this.taskExecutor.execute(packetHandler);
+        this.pcap4jExecutor.execute(packetHandler);
         /* STORE DATA TO DATABASE, NOTE: more data we are receiving, less interval we should have
         TODO this may not be working
         //CronTrigger cronTrigger = new CronTrigger("* * * * * ?");   // every second right now

@@ -44,7 +44,7 @@ public class PacketHandler implements Runnable {
     @Autowired
     private ApplicationContext applicationContext;
     @Autowired
-    private TaskExecutor taskExecutor;
+    private TaskExecutor pcap4jExecutor;
 
     @Override
     public void run() {
@@ -69,7 +69,7 @@ public class PacketHandler implements Runnable {
                     final IpV4Packet ipV4Packet = packet.get(IpV4Packet.class);
                     final PacketReceiver packetReceiver = PacketHandler.this.applicationContext.getBean(PacketReceiver.class);
                     packetReceiver.packet = packet;
-                    PacketHandler.this.taskExecutor.execute(packetReceiver);
+                    PacketHandler.this.pcap4jExecutor.execute(packetReceiver);
                 }
             };
             // Tell the handle to loop using the listener we created

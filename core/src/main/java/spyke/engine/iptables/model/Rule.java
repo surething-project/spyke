@@ -1,257 +1,344 @@
 package spyke.engine.iptables.model;
 
+import com.google.common.base.Objects;
+import com.google.common.base.Optional;
+import com.google.common.base.Preconditions;
 import spyke.engine.iptables.model.types.Filter;
+import spyke.engine.iptables.model.types.Protocol;
 import spyke.engine.iptables.model.types.Table;
 
-import java.util.List;
-
+/**
+ * Iptables rule.
+ */
 public class Rule {
-    private String in;
-    private String out;
-    private String source;
-    private String destination;
-    private String protocol;
-    private Filter filter;
-    private String mark;
-    private Table table;
-    private String quota;
-    private String hashlimit;
-    private String hashlimit_name;
 
-    private String limit;
+    /**
+     * The optional input interface.
+     */
+    private final Optional<String> in;
+    /**
+     * The optional output interface.
+     */
+    private final Optional<String> out;
+    /**
+     * The optional source domain or ip address.
+     */
+    private final Optional<String> source;
+    /**
+     * The optional destination domain or ip address.
+     */
+    private final Optional<String> destination;
+    /**
+     * The optional {@link Protocol}.
+     */
+    private final Optional<Protocol> protocol;
+    /**
+     * The optional mark. Only available with {@link Table#MANGLE}.
+     */
+    private final Optional<String> mark;
+    /**
+     * The optional {@link Table}.
+     */
+    private final Optional<Table> table;
+    /**
+     * The optional quota.
+     */
+    private final Optional<String> quota;
+    /**
+     * The optional hashlimit.
+     */
+    private final Optional<String> hashlimit;
+    /**
+     * The optional hashlimit name.
+     */
+    private final Optional<String> hashlimitName;
+    /**
+     * The optional limit.
+     */
+    private final Optional<String> limit;
+    /**
+     * The optional {@link Filter}.
+     */
+    private final Filter filter;
 
-    public Table getTable() {
-        return table;
+    private Rule(final Builder builder) {
+        Preconditions.checkNotNull(builder.filter, "Filter can not be null.");
+        this.in = builder.in;
+        this.out = builder.out;
+        this.source = builder.source;
+        this.destination = builder.destination;
+        this.protocol = builder.protocol;
+        this.filter = builder.filter;
+        this.mark = builder.mark;
+        this.table = builder.table;
+        this.quota = builder.quota;
+        this.hashlimit = builder.hashlimit;
+        this.hashlimitName = builder.hashlimitName;
+        this.limit = builder.limit;
     }
 
-    public void setTable(Table table) {
-        this.table = table;
+    public static Builder builder() {
+        return new Builder();
     }
 
-    public String getIn() {
-        return in;
+    public Optional<String> getIn() {
+        return this.in;
     }
 
-    public void setIn(String in) {
-        this.in = in;
+    public Optional<String> getOut() {
+        return this.out;
     }
 
-    public String getOut() {
-        return out;
+    public Optional<Table> getTable() {
+        return this.table;
     }
 
-    public void setOut(String out) {
-        this.out = out;
+    public Optional<String> getSource() {
+        return this.source;
     }
 
-    public String getSource() {
-        return source;
+    public Optional<String> getDestination() {
+        return this.destination;
     }
 
-    public void setSource(String source) {
-        this.source = source;
-    }
-
-    public String getDestination() {
-        return destination;
-    }
-
-    public void setDestination(String destination) {
-        this.destination = destination;
-    }
-
-    public String getProtocol() {
-        return protocol;
-    }
-
-    public void setProtocol(String protocol) {
-        this.protocol = protocol;
+    public Optional<Protocol> getProtocol() {
+        return this.protocol;
     }
 
     public Filter getFilter() {
-        return filter;
+        return this.filter;
     }
 
-    public void setFilter(Filter filter) {
-        this.filter = filter;
+    public Optional<String> getMark() {
+        return this.mark;
     }
 
-    public String getMark() { return mark; }
-
-    public void setMark( String mark ) { this.mark=mark; }
-
-    public String getQuota() {
-        return in;
+    public Optional<String> getQuota() {
+        return this.in;
     }
 
-    public void setQuota(String quota) {
-        this.quota = quota;
+    public Optional<String> getHashlimit() {
+        return this.hashlimit;
     }
 
-    public String getHashlimit() {
-        return hashlimit;
+    public Optional<String> getHashlimitName() {
+        return this.hashlimitName;
     }
 
-    public void setHashlimit(String hashlimit) {
-        this.hashlimit = hashlimit;
+    public Optional<String> getLimit() {
+        return this.limit;
     }
 
-    public String getHashlimitName() {
-        return hashlimit_name;
-    }
 
-    public void setHashlimitName(String hashlimit_name) {
-        this.hashlimit_name = hashlimit_name;
-    }
-
-    public String getLimit(){
-        return limit;
-    }
-
-    public void setLimit(String limit){
-        this.limit = limit;
-    }
-
-    private <T> boolean deepEquals(List<T> lhs, List<T> rhs) {
-        if (lhs == null && rhs == null)
-            return true;
-
-        if (lhs == null || rhs == null)
-            return false;
-
-        if (lhs.size() != rhs.size())
-            return false;
-
-        for (int i = 0; i < lhs.size(); i++) {
-            T l = lhs.get(i);
-            T r = rhs.get(i);
-
-            if (l == null && r == null)
-                continue;
-
-            if (l == null || r == null)
-                return false;
-
-            if (!l.equals(r))
-                return false;
-        }
-
-        return true;
+    @Override
+    public int hashCode() {
+        return Objects.hashCode(
+                this.in,
+                this.out,
+                this.source,
+                this.destination,
+                this.protocol,
+                this.filter,
+                this.mark,
+                this.table,
+                this.quota,
+                this.hashlimit,
+                this.hashlimitName,
+                this.limit
+        );
     }
 
     @Override
-    public String toString() {
-
-        String s = " ";
-
-        if(table != null)
-            s += "-t " + table + " ";
-
-        if (in != null)
-            s += "-i " + in + " ";
-
-        if (out != null)
-            s += "-o " + out + " ";
-
-        if (source != null){
-            s += "-s " + source + " ";
-        }
-
-        if (destination != null){
-            s += "-d " + destination + " ";
-        }
-
-        if (protocol != null)
-            s += "-p " + protocol + " ";
-
-        if(hashlimit != null && hashlimit_name!=null)
-            s += "-m hashlimit --hashlimit-name " + hashlimit_name + " --hashlimit-above " + hashlimit + " ";
-
-        if(quota != null)
-            s += "-m quota --quota " + quota + " ";
-
-        if(limit != null){
-            s += "-m limit --limit "+ limit +"/m ";
-        }
-
-        s += "-j " + filter;
-
-        return s;
-    }
-    @Override
-    public boolean equals(Object obj) {
+    public boolean equals(final Object obj) {
         if (this == obj)
             return true;
         if (obj == null)
             return false;
         if (getClass() != obj.getClass())
             return false;
-        Rule other = (Rule) obj;
-        if (in == null) {
-            if (other.in != null)
-                return false;
-        } else if (!in.equals(other.in))
-            return false;
-        if (out == null) {
-            if (other.out != null)
-                return false;
-        } else if (!out.equals(other.out))
-            return false;
-        if (protocol == null) {
-            if (other.protocol != null)
-                return false;
-        } else if (!protocol.equals(other.protocol))
-            return false;
-        if (source == null) {
-            if (other.source != null)
-                return false;
-        } else if (!source.equals(other.source))
-            return false;
-        if (destination == null) {
-            if (other.destination != null)
-                return false;
-        } else if (!destination.equals(other.destination))
-            return false;
-        if (filter == null) {
-            if (other.filter != null)
-                return false;
-        } else if (!filter.equals(other.filter))
-            return false;
-        if (table == null) {
-            if (other.table != null)
-                return false;
-        } else if (!table.equals(other.table))
-            return false;
-        if (mark == null) {
-            if (other.mark != null)
-                return false;
-        } else if (!mark.equals(other.mark))
-            return false;
-        if (quota == null) {
-            if (other.quota != null)
-                return false;
-        } else if (!quota.equals(other.quota))
-            return false;
-        if (hashlimit == null) {
-            if (other.hashlimit != null)
-                return false;
-        } else if (!hashlimit.equals(other.hashlimit))
-            return false;
-        if (limit == null) {
-            if (other.limit != null)
-                return false;
-        } else if (!limit.equals(other.limit))
-            return false;
-        return true;
+        final Rule other = (Rule) obj;
+        return Objects.equal(this.in, other.in) && Objects.equal(this.out, other.out);
     }
+
     @Override
-    public int hashCode(){
-        if(this.filter == null || (this.source == null && this.destination == null)){
-            return -1;
+    public String toString() {
+
+        String rule = " ";
+
+        if (this.table.isPresent())
+            rule += "-t " + this.table.get() + " ";
+
+        if (this.in.isPresent())
+            rule += "-i " + this.in.get() + " ";
+
+        if (this.out.isPresent())
+            rule += "-o " + this.out.get() + " ";
+
+        if (this.source.isPresent()) {
+            rule += "-s " + this.source.get() + " ";
         }
-        if(this.source != null)
-            return (this.filter+source).hashCode();
-        return (this.filter+destination).hashCode();
+
+        if (this.destination.isPresent()) {
+            rule += "-d " + this.destination.get() + " ";
+        }
+
+        if (this.protocol.isPresent())
+            rule += "-p " + this.protocol.get() + " ";
+
+        if (this.hashlimit.isPresent() && this.hashlimitName.isPresent())
+            rule += "-m hashlimit --hashlimit-name " + this.hashlimitName.get() + " --hashlimit-above " + this.hashlimit.get() + " ";
+
+        if (this.quota.isPresent())
+            rule += "-m quota --quota " + this.quota.get() + " ";
+
+        if (this.limit.isPresent()) {
+            rule += "-m limit --limit " + this.limit.get() + "/m ";
+        }
+
+        rule += "-j " + this.filter;
+
+        return rule;
+    }
+
+    /**
+     * The builder for {@link Rule} instance.
+     */
+    public static class Builder {
+
+        /**
+         * The optional input interface.
+         */
+        private Optional<String> in = Optional.absent();
+        /**
+         * The optional output interface.
+         */
+        private Optional<String> out = Optional.absent();
+        /**
+         * The optional source domain or ip address.
+         */
+        private Optional<String> source = Optional.absent();
+        /**
+         * The optional destination domain or ip address.
+         */
+        private Optional<String> destination = Optional.absent();
+        /**
+         * The optional {@link Protocol}.
+         */
+        private Optional<Protocol> protocol = Optional.absent();
+        /**
+         * The {@link Filter}.
+         */
+        private Filter filter;
+        /**
+         * The optional mark. Only available with {@link Table#MANGLE}.
+         */
+        private Optional<String> mark = Optional.absent();
+        /**
+         * The optional {@link Table}.
+         */
+        private Optional<Table> table = Optional.absent();
+        /**
+         * The optional quota.
+         */
+        private Optional<String> quota = Optional.absent();
+        /**
+         * The optional hashlimit.
+         */
+        private Optional<String> hashlimit = Optional.absent();
+        /**
+         * The optional hashlimit name.
+         */
+        private Optional<String> hashlimitName = Optional.absent();
+        /**
+         * The optional limit.
+         */
+        private Optional<String> limit = Optional.absent();
+
+        /**
+         * Creates a new instance of {@link Rule}.
+         */
+        private Builder() {
+        }
+
+        public Builder in(final String in) {
+            this.in = Optional.of(in);
+            return this;
+        }
+
+        public Builder out(final String out) {
+            this.out = Optional.of(out);
+            return this;
+        }
+
+        public Builder source(final String source) {
+            this.source = Optional.of(source);
+            return this;
+        }
+
+        public Builder destination(final String destination) {
+            this.destination = Optional.of(destination);
+            return this;
+        }
+
+        public Builder protocol(final Protocol protocol) {
+            this.protocol = Optional.of(protocol);
+            return this;
+        }
+
+        public Builder filter(final Filter filter) {
+            this.filter = filter;
+            return this;
+        }
+
+        public Builder mark(final String mark) {
+            this.mark = Optional.of(mark);
+            return this;
+        }
+
+        public Builder table(final Table table) {
+            this.table = Optional.of(table);
+            return this;
+        }
+
+        public Builder quota(final String quota) {
+            this.quota = Optional.of(quota);
+            return this;
+        }
+
+        public Builder hashlimit(final String hashlimit) {
+            this.hashlimit = Optional.of(hashlimit);
+            return this;
+        }
+
+        public Builder hashlimitName(final String hashlimitName) {
+            this.hashlimitName = Optional.of(hashlimitName);
+            return this;
+        }
+
+        public Builder limit(final String limit) {
+            this.limit = Optional.of(limit);
+            return this;
+        }
+
+        public Builder from(final Rule rule) {
+            this.in = rule.getIn();
+            this.out = rule.getOut();
+            this.source = rule.getSource();
+            this.destination = rule.getDestination();
+            this.protocol = rule.getProtocol();
+            this.filter = rule.getFilter();
+            this.mark = rule.getMark();
+            this.table = rule.getTable();
+            this.quota = rule.getQuota();
+            this.hashlimit = rule.getHashlimit();
+            this.hashlimitName = rule.getHashlimitName();
+            this.limit = rule.getLimit();
+            return this;
+        }
+
+        public Rule build() {
+            return new Rule(this);
+        }
     }
 }
 
