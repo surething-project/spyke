@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 #
 #  SPYKE commands
 #  
@@ -53,11 +53,14 @@ VCGENCMD=/opt/vc/bin/vcgencmd
 #   -IPTABLES_LOG_CONF - path to iptables log config file; redirect log to specified file
 #   -DNS_LEASE - path to dnsmasq lease file
 #   -RC_LOCAL - path to rc.local file; bootstrap scrip
+
+# to be replaced
+PWD=TOBEREPLACED
 SPYKE=$PWD/core
 SCRIPT=$SPYKE/script
 CONFIG=$SCRIPT/config
 TARGET=$SPYKE/target
-SPYKE_JAR=$TARGET/core-2.0.0.jar
+SPYKE_JAR=$TARGET/core-1.1.0.jar
 IPTABLES_CONF=/etc/iptables.ipv4.conf
 SERVICE=/etc/systemd/system/spyke.service
 DNSMASQ_CONF=/etc/dnsmasq.conf
@@ -134,7 +137,7 @@ check_dependencies() {
     if [ "$hasMissingDependencies" = true ] ; then
         echo "Installing the required dependencies? [y/N]"
         read option
-        if [ "$option" = "y" ] || [ "&option" = "Y" ]; then
+        if [ "$option" = "y" ] || [ "$option" = "Y" ]; then
             if ! which apt &> /dev/null; then
                 echo "Unknow command apt, is this debian based linux?"
                 exit 1
@@ -199,6 +202,7 @@ DAEMON_CONF=\"/etc/hostapd/hostapd.conf\"" > $HOSTAPD_DEFAULT
     $ECHO "# add for spyke
 net.ipv4.ip_forward=1" > $SYSCTL_CONF
 
+    $ECHO "spyke configuration done"
     ## update iptables-restore 
     #if $GREP -q "iptables-restore < $IPTABLES_CONF" $RC_LOCAL; then
     #    $ECHO "file $RC_LOCAL already has iptables-restore < $IPTABLES_CONF"
@@ -222,6 +226,7 @@ install() {
     spyke_configuration
 
     $MVN clean package
+    sleep 1
     $SYSTEMCTL enable spyke
     $SYSTEMCTL start spyke
 
@@ -237,13 +242,14 @@ install() {
     sleep 1
     $SYSTEMCTL start dnsmasq
     $SYSTEMCTL start hostapd
+    $SYSTEMCTL enable dnsmasq
+    $SYSTEMCTL enable hostapd
 
     # FIXME this should be replaced with pcap4j 
     $CP $CONFIG/iptables.conf $IPTABLES_LOG_CONF
     $SYSTEMCTL restart rsyslog
 
     $ECHO "spyke installed and started"
-
 }
 
 uninstall() {
@@ -256,8 +262,19 @@ uninstall() {
 
     $SYSTEMCTL disable spyke
     $MVN clean
+
+    if [ "`$SYSTEMCTL is-active hostapd`" == "active" ]; then
+        $SYSTEMCTL stop hostapd
+    fi
+    if [ "`$SYSTEMCTL is-active dnsmasq`" == "active" ]; then
+        $SYSTEMCTL stop dnsmasq
+    fi
+    $RM $DNS_LEASE
+    sleep 1
+    $SYSTEMCTL disable dnsmasq
+    $SYSTEMCTL disable hostapd
     # rm spyke iptables
-    $RM $IPTABLES_CONF
+    #$RM $IPTABLES_CONF
     # delete all iptables rules
     $IPTABLES -P INPUT ACCEPT
     $IPTABLES -P FORWARD ACCEPT
@@ -270,16 +287,15 @@ uninstall() {
     # rm spyke service
     $RM $SERVICE
     # rm the handle new connected device script line added
-    $SED -i "/dhcp-script=\/home\/pi\/spyke\/script\/device/d" $DNSMASQ_CONF
+    $SED -i "/dhcp-script=$SCRIPT/device/d" $DNSMASQ_CONF
     # deactivate iptables on /etc/rc.local file
-    $SED -i "/iptables-restore < \/etc\/iptables.ipv4.conf/d" $RC_LOCAL
+    #$SED -i "/iptables-restore < \/etc\/iptables.ipv4.conf/d" $RC_LOCAL
 
     # rm iptables log config file
     $RM $IPTABLES_LOG_CONF
     $SYSTEMCTL restart rsyslog
 
     $ECHO "spyke uninstalled"
-
 }
 
 launch() {
@@ -290,7 +306,7 @@ launch() {
         $SYSTEMCTL start spyke
         $ECHO "spyke started"
         $ECHO "configuring spyke..."
-        $IPTABLES-restore < /etc/iptables.ipv4.conf
+        #$IPTABLES-restore < /etc/iptables.ipv4.conf
 
         #give time to spyke start and create spyke.db
         while [ ! -f target/spyke.db ]
@@ -437,6 +453,6 @@ case "$1" in
 
   *)    howtouse;;
 
-esac
+esac 
 
 exit 0
