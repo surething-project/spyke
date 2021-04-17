@@ -81,8 +81,6 @@ public class Iptables {
             try {
                 final InetAddress address = InetAddress.getByName(domain);
                 final Rule rule = Rule.builder().destination(address.getHostAddress()).filter(Filter.DROP).build();
-                //logger.info(address.getHostAddress());
-                //logger.info(address.getCanonicalHostName());
                 if (!this.blacklist.contains(rule) && execute("sudo /sbin/iptables -t mangle -A POSTROUTING " + rule.toString())) {
                     this.blacklist.add(rule);
                     logger.info(domain + " blocked!");
@@ -179,18 +177,9 @@ public class Iptables {
             if (execute("sudo /sbin/iptables -I FORWARD -j " + device.getIp())) {
                 logger.info("Chain [{}] created!", device.getIp());
             }
-            /* INPUT & OUTPUT ACCEPT is no longer necessary
-            Rule input = getRule(device.getIp(), Filter.ACCEPT, true);
-            Rule output = getRule(device.getIp(), Filter.ACCEPT, false);
-
-            if(execute("sudo /sbin/iptables -A INPUT " + input.toString())){
-                deviceRules.get(device).add(input);
-            }
-            if(execute("sudo /sbin/iptables -A OUTPUT " + output.toString())){
-                deviceRules.get(device).add(output);
-            }
-             */
             insertToList(device, getCompoundRules(device));
+        } else {
+            logger.error("Add rules failed for device: {}", device);
         }
     }
 
@@ -299,7 +288,12 @@ public class Iptables {
 
     private CompoundRules getCompoundRules(final Device device) {
 
-        final CompoundRules.Builder compoundRules = CompoundRules.builder().defaultDrop(device.getIp());
+        final CompoundRules rules = this.deviceRules.getOrDefault(
+                device,
+                CompoundRules.builder().defaultDrop(device.getIp()).build()
+        );
+
+        final CompoundRules.Builder compoundRules = CompoundRules.builder().from(rules);
 
         if (device.getBandwidth() != 0) {
             final String hashLimit = device.getBandwidth() + String.valueOf(device.getBandwidthBUnit()) + "/s";
@@ -457,7 +451,7 @@ public class Iptables {
      *
      * @return {@code true} if the current user has admin privilege, {@code false} otherwise.
      */
-    private boolean isAdmin() {
+    public boolean isAdmin() {
         try {
             final Process p;
             synchronized (this) {
@@ -474,6 +468,39 @@ public class Iptables {
             logger.error("Checking is admin failed: {}", e.getMessage());
         }
         logger.warn("The user has NOT admin privilege");
+        return false;
+    }
+
+    /**
+     * Saves the system iptables rules to given file.
+     *
+     * @return {@code true} if succeed, {@code false} otherwise.
+     */
+    public boolean saveSystemRules(final File saveIptablesFile) {
+
+        if (isAdmin() && execute("/sbin/iptables-save > " + saveIptablesFile.getAbsolutePath())) {
+            logger.info("System Iptables rules are saved on {}.", saveIptablesFile.getAbsolutePath());
+            return true;
+        }
+
+        logger.error("System Iptables rules failed to save on {}.", saveIptablesFile.getAbsolutePath());
+        return false;
+    }
+
+    /**
+     * Saves the system iptables rules to given file.
+     *
+     * @return {@code true} if succeed, {@code false} otherwise.
+     */
+    public boolean restoreSystemRules(final File saveIptablesFile) {
+
+        if (isAdmin() && execute("/sbin/iptables-restore < " + saveIptablesFile.getAbsolutePath())) {
+            logger.info("System Iptables rules are restored from {}.", saveIptablesFile.getAbsolutePath());
+            saveIptablesFile.delete();
+            return true;
+        }
+
+        logger.error("System Iptables rules failed to restore from {}.", saveIptablesFile.getAbsolutePath());
         return false;
     }
 }

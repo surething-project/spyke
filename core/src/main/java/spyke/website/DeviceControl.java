@@ -19,7 +19,7 @@ import spyke.database.repository.DeviceRepository;
 import spyke.database.repository.PeriodRepository;
 import spyke.engine.config.ScheduleConfig;
 import spyke.engine.iptables.component.Iptables;
-import spyke.engine.manage.IptablesLog;
+import spyke.engine.iptables.IptablesManager;
 import spyke.engine.util.OperatingSystem;
 
 import java.util.ArrayList;
@@ -30,8 +30,6 @@ import java.util.Map;
 
 import static org.springframework.web.bind.annotation.RequestMethod.GET;
 import static org.springframework.web.bind.annotation.RequestMethod.POST;
-import static org.springframework.web.bind.annotation.RequestMethod.PUT;
-import static org.springframework.web.bind.annotation.RequestMethod.DELETE;
 
 @RestController
 @RequestMapping("/device")
@@ -47,7 +45,7 @@ public class DeviceControl {
     @Autowired
     private ScheduleConfig scheduleConfig;
     @Autowired
-    private IptablesLog iptablesLog;
+    private IptablesManager iptablesManager;
 
     /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
      *                                     G E T                                           *
@@ -134,7 +132,7 @@ public class DeviceControl {
     public ResponseEntity<Map<String, String>> getIpList(@PathVariable("mac") final String mac) {
         if (this.deviceRepository.findById(mac).isPresent()) {
             final Device device = this.deviceRepository.findById(mac).get();
-            return new ResponseEntity<Map<String, String>>(this.iptablesLog.getList(device), HttpStatus.OK);
+            return new ResponseEntity<Map<String, String>>(this.iptablesManager.getList(device), HttpStatus.OK);
         }
         return new ResponseEntity<Map<String, String>>(new HashMap<String, String>(), HttpStatus.OK);
     }

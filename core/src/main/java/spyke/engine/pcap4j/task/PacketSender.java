@@ -10,7 +10,7 @@ import org.springframework.stereotype.Component;
 import spyke.database.model.Device;
 import spyke.database.model.Upload;
 import spyke.database.repository.DeviceRepository;
-import spyke.engine.pcap4j.manage.PacketManager;
+import spyke.engine.pcap4j.PacketManager;
 
 import java.util.Calendar;
 import java.util.Date;

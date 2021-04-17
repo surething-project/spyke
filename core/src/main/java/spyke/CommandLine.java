@@ -10,8 +10,8 @@ import org.springframework.core.task.TaskExecutor;
 import org.springframework.scheduling.TaskScheduler;
 import org.springframework.scheduling.support.CronTrigger;
 import org.springframework.stereotype.Component;
-import spyke.engine.manage.DeviceManager;
-import spyke.engine.manage.IptablesLog;
+import spyke.engine.service.DeviceManager;
+import spyke.engine.iptables.IptablesManager;
 import spyke.engine.pcap4j.task.PacketHandler;
 
 @Component
@@ -79,10 +79,10 @@ public class CommandLine implements CommandLineRunner {
     }
 
     private void manageSchedulerTasks() {
-        final IptablesLog iptablesLog = this.applicationContext.getBean(IptablesLog.class);
+        final IptablesManager iptablesManager = this.applicationContext.getBean(IptablesManager.class);
 
         //CronTrigger cronTrigger = new CronTrigger("0 0 * * * ?");   // every hour
         final CronTrigger cronTrigger = new CronTrigger("0 * * * * ?");   // every minute
-        this.taskScheduler.schedule(iptablesLog, cronTrigger);
+        this.taskScheduler.schedule(iptablesManager, cronTrigger);
     }
 }

@@ -12,7 +12,7 @@ import org.springframework.stereotype.Component;
 import spyke.database.model.Download;
 import spyke.database.model.Upload;
 import spyke.database.repository.DeviceRepository;
-import spyke.engine.pcap4j.manage.PacketManager;
+import spyke.engine.pcap4j.PacketManager;
 
 import java.net.InetAddress;
 import java.util.Calendar;

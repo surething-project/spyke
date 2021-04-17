@@ -14,10 +14,11 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 @ExtendWith(SpringExtension.class)
 @SpringBootTest
-public class IptablesTest {
+public class IptablesFilesTest {
 
     private ProcessBuilder processBuilder;
 
@@ -62,33 +63,33 @@ public class IptablesTest {
 
     @Test
     public void getIptables() throws IOException, InterruptedException {
-        if (OperatingSystem.isLinux()) {
-            final StringBuilder input = new StringBuilder();
-            final StringBuilder error = new StringBuilder();
-            final Process process = this.processBuilder.start();
-            try (final BufferedReader inputReader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
-                String line;
-                while ((line = inputReader.readLine()) != null) {
-                    input.append(line);
-                }
-            } catch (final IOException ignored) {
-            }
-            try (final BufferedReader errorReader = new BufferedReader(new InputStreamReader(process.getErrorStream()))) {
-                String line;
-                while ((line = errorReader.readLine()) != null) {
-                    error.append(line);
-                }
-            } catch (final IOException ignored) {
-            }
 
-            assertThat(input)
-                    .as("List of input should not be empty")
-                    .isNotEmpty();
-            assertThat(error)
-                    .as("List of error should be empty")
-                    .isEmpty();
-            process.waitFor();
+        assumeTrue(OperatingSystem.isLinux());
+
+        final StringBuilder input = new StringBuilder();
+        final StringBuilder error = new StringBuilder();
+        final Process process = this.processBuilder.start();
+
+        try (final BufferedReader inputReader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
+            String line;
+            while ((line = inputReader.readLine()) != null) {
+                input.append(line);
+            }
         }
-    }
 
+        try (final BufferedReader errorReader = new BufferedReader(new InputStreamReader(process.getErrorStream()))) {
+            String line;
+            while ((line = errorReader.readLine()) != null) {
+                error.append(line);
+            }
+        }
+
+        assertThat(input)
+                .as("List of input should not be empty")
+                .isNotEmpty();
+        assertThat(error)
+                .as("List of error should be empty")
+                .isEmpty();
+        process.waitFor();
+    }
 }

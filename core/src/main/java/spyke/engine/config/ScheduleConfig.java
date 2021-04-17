@@ -7,7 +7,7 @@ import org.springframework.scheduling.support.CronTrigger;
 import org.springframework.stereotype.Service;
 import spyke.database.model.Device;
 import spyke.database.model.types.TUnit;
-import spyke.engine.manage.PeriodManager;
+import spyke.engine.service.PeriodManager;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -83,5 +83,9 @@ public class ScheduleConfig {
 
     public ScheduledFuture<?> getScheduleByDevice(final Device device) {
         return this.schedules.get(device);
+    }
+
+    public void cleanScheduleTasks() {
+        this.schedules.clear();
     }
 }

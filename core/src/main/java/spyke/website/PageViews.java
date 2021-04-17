@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import spyke.database.model.Device;
 import spyke.database.repository.DeviceRepository;
 import spyke.engine.iptables.component.Iptables;
-import spyke.engine.manage.IptablesLog;
+import spyke.engine.iptables.IptablesManager;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
@@ -31,7 +31,7 @@ public class PageViews {
     @Autowired
     private DeviceRepository deviceRepository;
     @Autowired
-    private IptablesLog iptablesLog;
+    private IptablesManager iptablesManager;
 
     @GetMapping("/devices")
     public String devices(final Model model) {
@@ -50,7 +50,7 @@ public class PageViews {
     @GetMapping("/iplist/{mac}")
     public String iplist(@PathVariable("mac") final String mac, final Model model) {
         final Device device = this.deviceRepository.findById(mac).get();
-        final Map<String, String> ipname = this.iptablesLog.getList(device);
+        final Map<String, String> ipname = this.iptablesManager.getList(device);
         model.addAttribute("device", device);
         model.addAttribute("iplist", ipname);
 

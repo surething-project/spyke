@@ -236,14 +236,14 @@ install() {
         sleep 1
     done
 
+    $SYSTEMCTL enable dnsmasq
+    $SYSTEMCTL enable hostapd
     $SYSTEMCTL stop hostapd
     $SYSTEMCTL stop dnsmasq
     $RM $DNS_LEASE
     sleep 1
     $SYSTEMCTL start dnsmasq
     $SYSTEMCTL start hostapd
-    $SYSTEMCTL enable dnsmasq
-    $SYSTEMCTL enable hostapd
 
     # FIXME this should be replaced with pcap4j 
     $CP $CONFIG/iptables.conf $IPTABLES_LOG_CONF

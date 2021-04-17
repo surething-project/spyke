@@ -1,4 +1,4 @@
-package spyke.engine.manage;
+package spyke.engine.service;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,7 +21,9 @@ import java.util.Date;
 @Service
 @Scope("prototype")
 public class PeriodManager implements Runnable {
+
     private static final Logger logger = LoggerFactory.getLogger(PeriodManager.class);
+
     @Autowired
     private PeriodRepository periodRepository;
     @Autowired

@@ -1,4 +1,4 @@
-package spyke.engine.manage;
+package spyke.engine.iptables;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,17 +23,23 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
+/**
+ * Gets the iptables logs. The service aims to get the ip address for each device that is uploading data to.
+ * <p>
+ * This shall be replaced by pcap4j.
+ */
 @Service
-public class IptablesLog implements Runnable {
+public class IptablesManager implements Runnable {
 
     /**
      * The logger.
      */
-    private static final Logger logger = LoggerFactory.getLogger(IptablesLog.class);
+    private static final Logger logger = LoggerFactory.getLogger(IptablesManager.class);
     /**
      * A map with key as device and value as a concurrent map of key ip and value hostname of server that device is uploading data.
      */
     private final Map<Device, ConcurrentHashMap<String, String>> outgoingDomainByDevice = new ConcurrentHashMap<>();
+
     @Autowired
     private DeviceRepository deviceRepository;
 
@@ -79,6 +85,7 @@ public class IptablesLog implements Runnable {
             return;
         }
         try {
+
             // copy is pretty faster, nevertheless it may lose some lines
             Files.copy(file.toPath(), backup.toPath());
             logger.warn("copied file successfully");
@@ -88,6 +95,7 @@ public class IptablesLog implements Runnable {
             file.createNewFile();
 
             logger.warn("empty file successfully");
+
             final List<String> lines = Files.readAllLines(backup.toPath(), Charset.defaultCharset());
             for (final String line : lines) {
                 writeToFile(line);
@@ -182,5 +190,4 @@ public class IptablesLog implements Runnable {
             }
         }
     }
-
 }
