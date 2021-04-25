@@ -1,6 +1,7 @@
 package spyke.engine.iptables.component;
 
 import com.google.common.base.Optional;
+import com.google.common.collect.ImmutableList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -22,6 +23,8 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import static com.google.common.collect.ImmutableList.toImmutableList;
 
 @Component("iptables")
 public class Iptables {
@@ -60,7 +63,8 @@ public class Iptables {
      */
     public boolean restoreDefaultRules() {
 
-        final File iptablesConf = new File("script/config/iptables.ipv4.conf");
+        final File file = new File("script/config/iptables.ipv4.conf");
+        final File iptablesConf = file.exists() ? file : new File("/etc/iptables.ipv4.conf");
         if (isAdmin() && iptablesConf.exists() &&
                 execute("sudo /sbin/iptables-restore < " + iptablesConf.getAbsolutePath())) {
             logger.info("Iptables is restored with spyke default rules.");
@@ -452,23 +456,38 @@ public class Iptables {
      * @return {@code true} if the current user has admin privilege, {@code false} otherwise.
      */
     public boolean isAdmin() {
-        try {
-            final Process p;
-            synchronized (this) {
-                p = Runtime.getRuntime().exec("id -u");
-                p.waitFor();
-            }
-            try (final BufferedReader buffer = new BufferedReader(new InputStreamReader(p.getInputStream()))) {
-                if (buffer.readLine().equals("0")) {
-                    logger.warn("The user has admin privilege");
-                    return true;
-                }
-            }
-        } catch (final Exception e) {
-            logger.error("Checking is admin failed: {}", e.getMessage());
+        final List<String> userId = executeWithResult("id -u", Optional.absent());
+        if (userId.get(0).equals("0")) {
+            logger.warn("The user has admin privilege");
+            return true;
         }
         logger.warn("The user has NOT admin privilege");
         return false;
+    }
+
+    /**
+     * Execute a given linux command and return the result in Stream.
+     *
+     * @param command The expected linux command.
+     * @return The stream of String.
+     */
+    public List<String> executeWithResult(final String command, final Optional<String> filter) {
+        try {
+            final Process p;
+            synchronized (this) {
+                p = Runtime.getRuntime().exec(command);
+                p.waitFor();
+            }
+            try (final BufferedReader buffer = new BufferedReader(new InputStreamReader(p.getInputStream()))) {
+                if (filter.isPresent()) {
+                    return buffer.lines().filter(line -> line.contains(filter.get())).collect(toImmutableList());
+                }
+                return buffer.lines().collect(toImmutableList());
+            }
+        } catch (final Exception e) {
+            logger.error("Executing command {} failed with following massage {}", command, e.getMessage());
+        }
+        return ImmutableList.of();
     }
 
     /**

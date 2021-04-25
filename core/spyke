@@ -24,7 +24,7 @@
 MVN=/usr/bin/mvn
 FIND=/usr/bin/find
 TEE=/usr/bin/tee
-CHMOD=/bin/chmod
+CHMOD=/bin/chmod    # not used
 CP=/bin/cp
 RM=/bin/rm
 SED=/bin/sed
@@ -35,7 +35,7 @@ SYSTEMCTL=/bin/systemctl
 JOURNALCTL=/bin/journalctl
 NETSTAT=/bin/netstat
 IPTABLES=/sbin/iptables
-TC=/sbin/tc
+TC=/sbin/tc         # not used
 VCGENCMD=/opt/vc/bin/vcgencmd
 
 ### variables:
@@ -57,6 +57,7 @@ VCGENCMD=/opt/vc/bin/vcgencmd
 # to be replaced
 PWD=TOBEREPLACED
 SPYKE=$PWD/core
+POM_FILE=$SPYKE/pom.xml
 SCRIPT=$SPYKE/script
 CONFIG=$SCRIPT/config
 TARGET=$SPYKE/target
@@ -78,6 +79,14 @@ require_superuser() {
         echo "Please run this script with sudo."
         exit 1
     fi
+}
+
+wait_for_db() {
+    while [ ! -f $SPYKE/target/spyke.db ]
+    do
+        $ECHO "waiting for db file..."
+        sleep 1
+    done
 }
 
 check_dependencies() {
@@ -224,35 +233,61 @@ install() {
 
     check_dependencies
     spyke_configuration
-
-    $MVN clean package
-    sleep 1
-    $SYSTEMCTL enable spyke
-    $SYSTEMCTL start spyke
-
-    # wait spyke start and create spyke.db
-    while [ ! -f target/spyke.db ]
-    do
-        sleep 1
-    done
-
-    $SYSTEMCTL enable dnsmasq
-    $SYSTEMCTL enable hostapd
-    $SYSTEMCTL stop hostapd
-    $SYSTEMCTL stop dnsmasq
-    $RM $DNS_LEASE
-    sleep 1
-    $SYSTEMCTL start dnsmasq
-    $SYSTEMCTL start hostapd
-
-    # FIXME this should be replaced with pcap4j 
-    $CP $CONFIG/iptables.conf $IPTABLES_LOG_CONF
-    $SYSTEMCTL restart rsyslog
-
-    $ECHO "spyke installed and started"
+    launch
 }
 
 uninstall() {
+
+    terminate
+
+    # rm spyke service
+    $RM $SERVICE
+    # rm the handle new connected device script line added
+    $SED -i "/dhcp-script=$SCRIPT/device/d" $DNSMASQ_CONF
+    # deactivate iptables on /etc/rc.local file
+    #$SED -i "/iptables-restore < \/etc\/iptables.ipv4.conf/d" $RC_LOCAL
+
+    # rm iptables log config file
+    $RM $IPTABLES_LOG_CONF
+    $SYSTEMCTL restart rsyslog
+
+    $ECHO "spyke uninstalled"
+}
+
+launch() {
+
+    require_superuser
+
+    if [ "`$SYSTEMCTL is-active spyke`" != "active" ]; then
+        $MVN clean package -f $POM_FILE
+        sleep 1
+        $SYSTEMCTL enable spyke
+        $SYSTEMCTL start spyke
+
+        # wait spyke start and create spyke.db
+        wait_for_db
+
+        $SYSTEMCTL enable dnsmasq
+        $SYSTEMCTL enable hostapd
+        $SYSTEMCTL stop hostapd
+        $SYSTEMCTL stop dnsmasq
+        $RM $DNS_LEASE
+        sleep 1
+        $SYSTEMCTL start dnsmasq
+        $SYSTEMCTL start hostapd
+
+        $IPTABLES -t nat -A POSTROUTING -o eth0 -j MASQUERADE
+        # FIXME this should be replaced with pcap4j 
+        $CP $CONFIG/iptables.conf $IPTABLES_LOG_CONF
+        $SYSTEMCTL restart rsyslog
+
+        $ECHO "spyke is configured and running."
+    else
+        $ECHO "spyke is already running."
+    fi
+}
+
+terminate() {
 
     require_superuser
 
@@ -261,7 +296,7 @@ uninstall() {
     fi
 
     $SYSTEMCTL disable spyke
-    $MVN clean
+    $MVN clean -f $POM_FILE
 
     if [ "`$SYSTEMCTL is-active hostapd`" == "active" ]; then
         $SYSTEMCTL stop hostapd
@@ -284,69 +319,7 @@ uninstall() {
     $IPTABLES -F
     $IPTABLES -X
 
-    # rm spyke service
-    $RM $SERVICE
-    # rm the handle new connected device script line added
-    $SED -i "/dhcp-script=$SCRIPT/device/d" $DNSMASQ_CONF
-    # deactivate iptables on /etc/rc.local file
-    #$SED -i "/iptables-restore < \/etc\/iptables.ipv4.conf/d" $RC_LOCAL
-
-    # rm iptables log config file
-    $RM $IPTABLES_LOG_CONF
-    $SYSTEMCTL restart rsyslog
-
-    $ECHO "spyke uninstalled"
-}
-
-launch() {
-
-    require_superuser
-
-    if [ "`$SYSTEMCTL is-active spyke`" != "active" ]; then
-        $SYSTEMCTL start spyke
-        $ECHO "spyke started"
-        $ECHO "configuring spyke..."
-        #$IPTABLES-restore < /etc/iptables.ipv4.conf
-
-        #give time to spyke start and create spyke.db
-        while [ ! -f target/spyke.db ]
-        do
-            sleep 1
-        done
-
-        $SYSTEMCTL stop hostapd
-        $SYSTEMCTL stop dnsmasq
-        $RM $DNS_LEASE
-        sleep 1
-        $SYSTEMCTL start dnsmasq
-        $SYSTEMCTL start hostapd
-        $ECHO "spyke is configured and running."
-    else
-        $ECHO "spyke is already running."
-    fi
-
-}
-
-terminate() {
-
-    require_superuser
-
-    if [ "`$SYSTEMCTL is-active spyke`" == "active" ]; then
-        $SYSTEMCTL stop spyke
-        $ECHO "spyke stopped"
-        $RM $PWD/target/spyke.db
-        $IPTABLES -P INPUT ACCEPT
-        $IPTABLES -P FORWARD ACCEPT
-        $IPTABLES -P OUTPUT ACCEPT
-        $IPTABLES -t nat -F
-        $IPTABLES -t mangle -F
-        $IPTABLES -F
-        $IPTABLES -X
-        $ECHO "Database and Iptables rules are cleaned."
-    else
-        $ECHO "spyke is not running"
-    fi
-
+    $ECHO "Dns lease and iptables demoved"
 }
 
 restart() {
@@ -354,7 +327,6 @@ restart() {
     terminate
     sleep 3
     launch
-
 }
 
 reinstall() {
@@ -362,7 +334,6 @@ reinstall() {
     uninstall
     sleep 3
     install
-
 }
 
 status() {

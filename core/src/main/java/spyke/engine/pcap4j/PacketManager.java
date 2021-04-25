@@ -13,7 +13,9 @@ import java.util.List;
 
 @Service
 public class PacketManager {
+
     private final Logger logger = LoggerFactory.getLogger(PacketManager.class);
+
     private final HashMap<PacketId, List<Download>> downloadPacketManager = new HashMap<PacketId, List<Download>>();
     private final HashMap<PacketId, List<Upload>> uploadPacketManager = new HashMap<PacketId, List<Upload>>();
 
